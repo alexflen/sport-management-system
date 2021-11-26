@@ -38,15 +38,15 @@ class StartEnrollSportsman(surname: String, name: String, birthYear: Int, collec
 }
 
 class Time(time : String) {
-    val H: Int
-    val M: Int
-    val S: Int
+    var H: Int
+    var M: Int
+    var S: Int
     init {
         val numbers = time.split(':')
         if (numbers.size != 3) {
             throw IllegalStateException("Incorrect time")
         }
-        if (numbers.get(0).toIntOrNull() == null) {
+        if (numbers[0].toIntOrNull() == null) {
             throw IllegalStateException("Incorrect H in time")
         } else {
             this.H = numbers.get(0).toInt()
@@ -55,7 +55,7 @@ class Time(time : String) {
             }
         }
 
-        if (numbers.get(1).toIntOrNull() == null) {
+        if (numbers[1].toIntOrNull() == null) {
             throw IllegalStateException("Incorrect M in time")
         } else {
             this.M = numbers.get(1).toInt()
@@ -64,7 +64,7 @@ class Time(time : String) {
             }
         }
 
-        if (numbers.get(2).toIntOrNull() == null) {
+        if (numbers[2].toIntOrNull() == null) {
             throw IllegalStateException("Incorrect S in time")
         } else {
             this.S = numbers.get(2).toInt()
@@ -85,7 +85,7 @@ class Time(time : String) {
         }
     }
 
-    operator fun Time.minus(other : Time): Time {
+    operator fun minus(other : Time): Time {
         if (this < other) {
             throw IllegalStateException("More is subtracted from less time")
         }
@@ -103,6 +103,14 @@ class Time(time : String) {
         return Time("$h:$m:$s")
     }
 
+    fun Seconds(): Int {
+        return this.H * 24 * 60 + this.M * 60 + this.S
+    }
+
+    operator fun div(other : Time): Double {
+        return this.Seconds().toDouble() / other.Seconds()
+    }
+
     operator fun inc(): Time {
         var s = this.S + 1
         var m = this.M
@@ -118,6 +126,9 @@ class Time(time : String) {
         if (h == 24) {
             h = 0
         }
+        this.H = h
+        this.M = m
+        this.S = s
         return Time("$h:$m:$s")
     }
 
