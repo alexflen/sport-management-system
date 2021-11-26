@@ -70,7 +70,7 @@ class Time(time : String) {
 
     }
 
-    operator fun Time.compareTo(other : Time): Int {
+    operator fun compareTo(other : Time): Int {
         if (this.H != other.H) {
             return this.H - other.H
         } else if (this.M != other.M) {
@@ -98,7 +98,7 @@ class Time(time : String) {
         return Time("$h:$m:$s")
     }
 
-    operator fun Time.inc(): Time {
+    operator fun inc(): Time {
         var s = this.S + 1
         var m = this.M
         var h = this.H

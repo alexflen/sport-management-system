@@ -12,6 +12,8 @@ internal class Tests {
         val Time2: Time = Time(time2)
         assertEquals(time1, Time1.toString())
         assertEquals(time2, Time2.toString())
+        assert(Time1 < Time2)
+        assert(Time2 > Time1)
     }
 
 }
