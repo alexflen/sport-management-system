@@ -1,4 +1,5 @@
 package ru.emkn.kotlin.sms
+import java.lang.IllegalStateException
 
 open class Sportsman(surname: String, name: String, birthYear: Int, collective: String, category: String? = null) {
     val surname: String
@@ -28,6 +29,63 @@ class EnrollSportsman(surname: String, name: String, birthYear: Int, collective:
 
     override fun toString(): String {
         return "${super.toString()},${desiredGroup?: ""},$collective"
+    }
+}
+
+class Time(time : String) {
+    val H: Int
+    val M: Int
+    val S: Int
+    init {
+        val numbers = time.split(':')
+        if (numbers.size != 3) {
+            throw IllegalStateException("Incorrect time")
+        }
+        if (numbers.get(0).toIntOrNull() == null) {
+            throw IllegalStateException("Incorrect H in time")
+        } else {
+            this.H = numbers.get(0).toInt()
+        }
+
+        if (numbers.get(1).toIntOrNull() == null) {
+            throw IllegalStateException("Incorrect M in time")
+        } else {
+            this.M = numbers.get(1).toInt()
+        }
+
+        if (numbers.get(2).toIntOrNull() == null) {
+            throw IllegalStateException("Incorrect S in time")
+        } else {
+            this.S = numbers.get(2).toInt()
+        }
+    }
+
+    operator fun Time.compareTo(other : Time): Int {
+        if (this.H != other.H) {
+            return this.H - other.H
+        } else if (this.M != other.M) {
+            return this.M - other.M
+        } else {
+            return this.S - other.S
+        }
+    }
+
+    operator fun Time.minus(other : Time): Time {
+        if (this < other) {
+            throw IllegalStateException("More is subtracted from less time")
+        }
+        var h = this.H - other.H
+        var m = this.M - other.M
+        var s = this.S - other.S
+        if (s < 0) {
+            s += 60
+            m -= 1
+        }
+        if (m < 0) {
+            m += 60
+            h -= 1
+        }
+        return Time("$h:$m:$s")
     }
 }
 
