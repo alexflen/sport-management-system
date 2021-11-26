@@ -172,7 +172,7 @@ class StartGroup(name: String, participants: List<StartEnrollSportsman>) {
     }
 
     override fun toString(): String {
-        var result: String = "$name\n"
+        var result = "$name\n"
         participants.forEach {
             result += "${it.toStringStart()}\n"
         }
@@ -187,7 +187,7 @@ class AllGroups(enrolled: List<StartEnrollSportsman>) {
     }
 
     companion object {
-        fun assignNumbers(enrolled: List<StartEnrollSportsman>): List<StartEnrollSportsman> {
+        private fun assignNumbers(enrolled: List<StartEnrollSportsman>): List<StartEnrollSportsman> {
             val shuffled = enrolled.shuffled()
             val result = mutableListOf<StartEnrollSportsman>()
             for (i in shuffled.indices) {
@@ -197,17 +197,17 @@ class AllGroups(enrolled: List<StartEnrollSportsman>) {
             return result
         }
 
-        fun assignGroup(enrolled: List<StartEnrollSportsman>): List<StartEnrollSportsman> {
+        private fun assignGroup(enrolled: List<StartEnrollSportsman>): List<StartEnrollSportsman> {
             return enrolled.map { it -> StartEnrollSportsman(it.surname, it.name,
                     it.birthYear, it.collective, it.desiredGroup?: "unspecified") }
         }
 
-        fun divideInGroups(enrolled: List<StartEnrollSportsman>): List<StartGroup> {
+        private fun divideInGroups(enrolled: List<StartEnrollSportsman>): List<StartGroup> {
             return enrolled.groupBy { it.desiredGroup?:
                 throw IllegalArgumentException("Group must be assigned") }.map { StartGroup(it.key, it.value) }
         }
 
-        fun assignTime(formedGroups: List<StartGroup>): List<StartGroup> {
+        private fun assignTime(formedGroups: List<StartGroup>): List<StartGroup> {
             val result = mutableListOf<StartGroup>()
             for (i in formedGroups.indices) {
                 var currentTime = Time("12:00:00")
