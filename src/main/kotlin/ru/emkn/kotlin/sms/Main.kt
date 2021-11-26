@@ -45,6 +45,32 @@ class StartSportsman(surname: String, name: String, birthYear: Int, number: Int,
     }
 }
 
+class Station(name: String, number: Int, time: String) {
+    val name: String
+    val time: String
+    val number: Int
+    init {
+        this.name = name
+        this.time = time
+        this.number = number
+    }
+
+    fun toStringName(): String {
+        return "$name"
+    }
+
+    override fun toString(): String {
+        return "$number,$time"
+    }
+}
+
+class StationSportsman(stations: List<Station>) {
+    val stations: List<Station>
+    init {
+        this.stations = stations
+    }
+}
+
 class StartGroup(name: String, participants: List<StartSportsman>) {
     val name: String
     val participants: List<StartSportsman>
@@ -54,6 +80,12 @@ class StartGroup(name: String, participants: List<StartSportsman>) {
     }
 }
 
+class AllGroups(groups: List<StartGroup>) {
+    val groups: List<StartGroup>
+    init {
+        this.groups = groups
+    }
+}
 
 fun main(args: Array<String>) {
     TODO()
