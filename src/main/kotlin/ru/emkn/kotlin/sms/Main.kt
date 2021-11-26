@@ -22,7 +22,7 @@ open class Sportsman(surname: String, name: String, birthYear: Int, collective: 
 class StartEnrollSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String?):
     Sportsman(surname, name, birthYear, collective)  {
     val desiredGroup: String?
-    var start: Int? = null
+    var start: Time? = null
     var number: Int? = null
     init {
         this.desiredGroup = desiredGroup
@@ -84,10 +84,6 @@ class Time(time : String) {
             return this.S - other.S
         }
     }
-    fun toStringStart(): String {
-        return "$number,${super.toString()},$start"
-    }
-}
 
     operator fun Time.minus(other : Time): Time {
         if (this < other) {
@@ -109,20 +105,6 @@ class Time(time : String) {
 
     override fun toString(): String {
         return "$H:$M:$S"
-    }
-}
-
-class StartSportsman(surname: String, name: String, birthYear: Int, number: Int, start: String, collective: String, category: String? = null) :
-    Sportsman(surname, name, birthYear, collective, category) {
-    val start: String
-    val number: Int
-    init {
-        this.start = start
-        this.number = number
-    }
-
-    override fun toString(): String {
-        return "$number,${super.toString()},$collective,$start"
     }
 }
 
@@ -152,9 +134,9 @@ class StationSportsman(stations: List<Station>) {
     }
 }
 
-class StartGroup(name: String, participants: List<StartSportsman>) {
+class StartGroup(name: String, participants: List<StartEnrollSportsman>) {
     val name: String
-    val participants: List<StartSportsman>
+    val participants: List<StartEnrollSportsman>
     init {
         this.name = name
         this.participants = participants
@@ -172,7 +154,7 @@ class StartGroup(name: String, participants: List<StartSportsman>) {
 class AllGroups(enrolled: List<StartEnrollSportsman>) {
     val groups: List<StartGroup>
     init {
-
+        groups = doEverythingToMakeGroups(enrolled)
     }
 
     companion object {
@@ -199,9 +181,17 @@ class AllGroups(enrolled: List<StartEnrollSportsman>) {
         fun assignTime(formedGroups: List<StartGroup>): List<StartGroup> {
             val result = mutableListOf<StartGroup>()
             for (i in formedGroups.indices) {
-                val currentTime = Time("12:00:00")
-
+                var currentTime = Time("12:00:00")
+                for (j in formedGroups[i].participants.indices) {
+                    formedGroups[i].participants[j].start = currentTime
+                    currentTime++
+                }
             }
+            return result
+        }
+
+        fun doEverythingToMakeGroups(enrolled: List<StartEnrollSportsman>): List<StartGroup> {
+            return assignTime(divideInGroups(assignGroup(assignNumbers(enrolled))))
         }
     }
 }
