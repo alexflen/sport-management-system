@@ -45,7 +45,7 @@ class Time(time : String) {
             throw IllegalStateException("Incorrect H in time")
         } else {
             this.H = numbers.get(0).toInt()
-            if (this.H < 0) {
+            if (this.H < 0 || this.H > 23) {
                 throw IllegalStateException("Incorrect H in time")
             }
         }
@@ -98,8 +98,26 @@ class Time(time : String) {
         return Time("$h:$m:$s")
     }
 
+    operator fun Time.inc(): Time {
+        var s = this.S + 1
+        var m = this.M
+        var h = this.H
+        if (s == 60) {
+            s = 0
+            m += 1
+        }
+        if (m == 60) {
+            m = 0
+            h += 1
+        }
+        if (h == 24) {
+            h = 0
+        }
+        return Time("$h:$m:$s")
+    }
+
     override fun toString(): String {
-        return "$H:$M:$S"
+        return "${"$H".padStart(2, '0')}:${"$M".padStart(2, '0')}:${"$S".padStart(2, '0')}"
     }
 }
 
