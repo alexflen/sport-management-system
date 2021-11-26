@@ -45,19 +45,29 @@ class Time(time : String) {
             throw IllegalStateException("Incorrect H in time")
         } else {
             this.H = numbers.get(0).toInt()
+            if (this.H < 0) {
+                throw IllegalStateException("Incorrect H in time")
+            }
         }
 
         if (numbers.get(1).toIntOrNull() == null) {
             throw IllegalStateException("Incorrect M in time")
         } else {
             this.M = numbers.get(1).toInt()
+            if (this.M < 0 || this.M > 59) {
+                throw IllegalStateException("Incorrect M in time")
+            }
         }
 
         if (numbers.get(2).toIntOrNull() == null) {
             throw IllegalStateException("Incorrect S in time")
         } else {
             this.S = numbers.get(2).toInt()
+            if (this.S < 0 || this.S > 59) {
+                throw IllegalStateException("Incorrect S in time")
+            }
         }
+
     }
 
     operator fun Time.compareTo(other : Time): Int {
@@ -86,6 +96,10 @@ class Time(time : String) {
             h -= 1
         }
         return Time("$h:$m:$s")
+    }
+
+    override fun toString(): String {
+        return "$H:$M:$S"
     }
 }
 
