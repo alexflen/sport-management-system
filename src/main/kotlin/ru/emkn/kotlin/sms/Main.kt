@@ -1,5 +1,4 @@
 package ru.emkn.kotlin.sms
-import java.lang.IllegalStateException
 
 open class Sportsman(surname: String, name: String, birthYear: Int, collective: String, category: String? = null) {
     val surname: String
@@ -20,15 +19,21 @@ open class Sportsman(surname: String, name: String, birthYear: Int, collective: 
     }
 }
 
-class EnrollSportsman(surname: String, name: String, birthYear: Int, collective: String, category: String? = null, desiredGroup: String? = null):
-    Sportsman(surname, name, birthYear, collective, category)  {
+class StartEnrollSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String?):
+    Sportsman(surname, name, birthYear, collective)  {
     val desiredGroup: String?
+    var start: Time? = null
+    var number: Int? = null
     init {
         this.desiredGroup = desiredGroup
     }
 
-    override fun toString(): String {
-        return "${super.toString()},${desiredGroup?: ""},$collective"
+    fun toStringEnroll(): String {
+        return "${super.toString()},${desiredGroup ?: ""},$collective"
+    }
+
+    fun toStringStart(): String {
+        return "$number,${super.toString()},$start"
     }
 }
 
@@ -121,20 +126,6 @@ class Time(time : String) {
     }
 }
 
-class StartSportsman(surname: String, name: String, birthYear: Int, number: Int, start: String, collective: String, category: String? = null) :
-    Sportsman(surname, name, birthYear, collective, category) {
-    val start: String
-    val number: Int
-    init {
-        this.start = start
-        this.number = number
-    }
-
-    override fun toString(): String {
-        return "$number,${super.toString()},$collective,$start"
-    }
-}
-
 class Station(name: String, number: Int, time: String) {
     val name: String
     val number: Int
@@ -161,12 +152,65 @@ class StationSportsman(stations: List<Station>) {
     }
 }
 
-class StartGroup(name: String, participants: List<StartSportsman>) {
+class StartGroup(name: String, participants: List<StartEnrollSportsman>) {
     val name: String
-    val participants: List<StartSportsman>
+    val participants: List<StartEnrollSportsman>
     init {
         this.name = name
         this.participants = participants
+    }
+
+    override fun toString(): String {
+        var result: String = "$name\n"
+        participants.forEach {
+            result += "${it.toStringStart()}\n"
+        }
+        return result
+    }
+}
+
+class AllGroups(enrolled: List<StartEnrollSportsman>) {
+    val groups: List<StartGroup>
+    init {
+        groups = doEverythingToMakeGroups(enrolled)
+    }
+
+    companion object {
+        fun assignNumbers(enrolled: List<StartEnrollSportsman>): List<StartEnrollSportsman> {
+            val shuffled = enrolled.shuffled()
+            val result = mutableListOf<StartEnrollSportsman>()
+            for (i in shuffled.indices) {
+                result.add(shuffled[i])
+                result.last().number = i + 1
+            }
+            return result
+        }
+
+        fun assignGroup(enrolled: List<StartEnrollSportsman>): List<StartEnrollSportsman> {
+            return enrolled.map { it -> StartEnrollSportsman(it.surname, it.name,
+                    it.birthYear, it.collective, it.desiredGroup?: "unspecified") }
+        }
+
+        fun divideInGroups(enrolled: List<StartEnrollSportsman>): List<StartGroup> {
+            return enrolled.groupBy { it.desiredGroup?:
+                throw IllegalArgumentException("Group must be assigned") }.map { StartGroup(it.key, it.value) }
+        }
+
+        fun assignTime(formedGroups: List<StartGroup>): List<StartGroup> {
+            val result = mutableListOf<StartGroup>()
+            for (i in formedGroups.indices) {
+                var currentTime = Time("12:00:00")
+                for (j in formedGroups[i].participants.indices) {
+                    formedGroups[i].participants[j].start = currentTime
+                    currentTime++
+                }
+            }
+            return result
+        }
+
+        fun doEverythingToMakeGroups(enrolled: List<StartEnrollSportsman>): List<StartGroup> {
+            return assignTime(divideInGroups(assignGroup(assignNumbers(enrolled))))
+        }
     }
 }
 
