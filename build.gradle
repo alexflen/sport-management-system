@@ -18,6 +18,7 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
     testImplementation "junit:junit:4.13.2"
+    implementation("com.github.doyaaaaaken:kotlin-csv-jvm:1.2.0") //for JVM platform
 }
 
 test {

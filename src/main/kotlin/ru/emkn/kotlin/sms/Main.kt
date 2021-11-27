@@ -1,5 +1,7 @@
 package ru.emkn.kotlin.sms
 
+import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+
 open class Sportsman(surname: String, name: String, birthYear: Int, collective: String, category: String? = null) {
     val surname: String
     val name: String
@@ -19,7 +21,7 @@ open class Sportsman(surname: String, name: String, birthYear: Int, collective: 
     }
 }
 
-class StartEnrollSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String?):
+open class StartEnrollSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String?):
     Sportsman(surname, name, birthYear, collective)  {
     val desiredGroup: String?
     var start: Time? = null
@@ -137,10 +139,10 @@ class Time(time : String) {
     }
 }
 
-class Station(name: String, number: Int, time: String) {
+class Station(name: String, number: Int, time: Time) {
     val name: String
     val number: Int
-    val time: String
+    val time: Time
     init {
         this.name = name
         this.number = number
@@ -163,25 +165,41 @@ class StationSportsman(stations: List<Station>) {
     }
 }
 
-class StartGroup(name: String, participants: List<StartEnrollSportsman>) {
+class Group<T: Sportsman>(name: String, participants: List<T>) {
     val name: String
-    val participants: List<StartEnrollSportsman>
+    val participants: List<T>
     init {
         this.name = name
         this.participants = participants
     }
 
-    override fun toString(): String {
-        var result = "$name\n"
+    fun toStringStart(): String {
+        val result = StringBuilder("$name\n")
         participants.forEach {
-            result += "${it.toStringStart()}\n"
+            if (it is StartEnrollSportsman) {
+                result.appendLine(it.toStringStart())
+            } else {
+                throw IllegalArgumentException("Wrong Sportsman; expected StartEnrollSportsman")
+            }
         }
-        return result
+        return result.toString()
+    }
+
+    fun toStringResult(): String {
+        val result = StringBuilder("$name\n")
+        participants.forEach {
+            if (it is ResultSportsman) {
+                result.appendLine(it)
+            } else {
+                throw IllegalArgumentException("Wrong Sportsman; expected ResultSportsman")
+            }
+        }
+        return result.toString()
     }
 }
 
-class AllGroups(enrolled: List<StartEnrollSportsman>) {
-    val groups: List<StartGroup>
+class AllStartGroups(enrolled: List<StartEnrollSportsman>) {
+    val groups: List<Group<StartEnrollSportsman>>
     init {
         groups = doEverythingToMakeGroups(enrolled)
     }
@@ -198,17 +216,17 @@ class AllGroups(enrolled: List<StartEnrollSportsman>) {
         }
 
         private fun assignGroup(enrolled: List<StartEnrollSportsman>): List<StartEnrollSportsman> {
-            return enrolled.map { it -> StartEnrollSportsman(it.surname, it.name,
+            return enrolled.map { StartEnrollSportsman(it.surname, it.name,
                     it.birthYear, it.collective, it.desiredGroup?: "unspecified") }
         }
 
-        private fun divideInGroups(enrolled: List<StartEnrollSportsman>): List<StartGroup> {
+        private fun divideInGroups(enrolled: List<StartEnrollSportsman>): List<Group<StartEnrollSportsman>> {
             return enrolled.groupBy { it.desiredGroup?:
-                throw IllegalArgumentException("Group must be assigned") }.map { StartGroup(it.key, it.value) }
+                throw IllegalArgumentException("Group must be assigned") }.map { Group(it.key, it.value) }
         }
 
-        private fun assignTime(formedGroups: List<StartGroup>): List<StartGroup> {
-            val result = mutableListOf<StartGroup>()
+        private fun assignTime(formedGroups: List<Group<StartEnrollSportsman>>): List<Group<StartEnrollSportsman>> {
+            val result = mutableListOf<Group<StartEnrollSportsman>>()
             for (i in formedGroups.indices) {
                 var currentTime = Time("12:00:00")
                 for (j in formedGroups[i].participants.indices) {
@@ -219,10 +237,24 @@ class AllGroups(enrolled: List<StartEnrollSportsman>) {
             return result
         }
 
-        fun doEverythingToMakeGroups(enrolled: List<StartEnrollSportsman>): List<StartGroup> {
+        fun doEverythingToMakeGroups(enrolled: List<StartEnrollSportsman>): List<Group<StartEnrollSportsman>> {
             return assignTime(divideInGroups(assignGroup(assignNumbers(enrolled))))
         }
     }
+}
+
+class ResultSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String):
+    StartEnrollSportsman(surname, name, birthYear, collective, desiredGroup) {
+    val time: Time? = null
+    val place: Int? = null
+
+    override fun toString(): String {
+        return "$place,$number,${super.toString()},$time"
+    }
+}
+
+class AllResultGroups {
+
 }
 
 fun main(args: Array<String>) {
