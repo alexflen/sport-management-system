@@ -159,10 +159,20 @@ class Station(name: String, number: Int, time: Time) {
     }
 }
 
-class StationSportsman(stations: List<Station>) {
+class StationSportsman(number: Int, stations: List<Station>) {
+    val number: Int
     val stations: List<Station>
     init {
+        this.number = number
         this.stations = stations
+    }
+
+    override fun toString(): String {
+        val result = StringBuilder("$number\n")
+        stations.forEach {
+            result.appendLine(it.toStringName())
+        }
+        return result.toString()
     }
 }
 
