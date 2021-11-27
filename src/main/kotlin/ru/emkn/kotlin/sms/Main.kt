@@ -1,6 +1,6 @@
 package ru.emkn.kotlin.sms
 
-import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+typealias IAE = IllegalArgumentException
 
 open class Sportsman(surname: String, name: String, birthYear: Int, collective: String, category: String? = null) {
     val surname: String
@@ -21,13 +21,14 @@ open class Sportsman(surname: String, name: String, birthYear: Int, collective: 
     }
 }
 
-open class StartEnrollSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String?):
+open class StartEnrollSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String?, number: Int? = null):
     Sportsman(surname, name, birthYear, collective)  {
     val desiredGroup: String?
     var start: Time? = null
-    var number: Int? = null
+    var number: Int?
     init {
         this.desiredGroup = desiredGroup
+        this.number = number
     }
 
     fun toStringEnroll(): String {
@@ -179,7 +180,7 @@ class Group<T: Sportsman>(name: String, participants: List<T>) {
             if (it is StartEnrollSportsman) {
                 result.appendLine(it.toStringStart())
             } else {
-                throw IllegalArgumentException("Wrong Sportsman; expected StartEnrollSportsman")
+                throw IAE("Wrong Sportsman; expected StartEnrollSportsman")
             }
         }
         return result.toString()
@@ -191,7 +192,7 @@ class Group<T: Sportsman>(name: String, participants: List<T>) {
             if (it is ResultSportsman) {
                 result.appendLine(it)
             } else {
-                throw IllegalArgumentException("Wrong Sportsman; expected ResultSportsman")
+                throw IAE("Wrong Sportsman; expected ResultSportsman")
             }
         }
         return result.toString()
@@ -222,7 +223,7 @@ class AllStartGroups(enrolled: List<StartEnrollSportsman>) {
 
         private fun divideInGroups(enrolled: List<StartEnrollSportsman>): List<Group<StartEnrollSportsman>> {
             return enrolled.groupBy { it.desiredGroup?:
-                throw IllegalArgumentException("Group must be assigned") }.map { Group(it.key, it.value) }
+                throw IAE("Group must be assigned") }.map { Group(it.key, it.value) }
         }
 
         private fun assignTime(formedGroups: List<Group<StartEnrollSportsman>>): List<Group<StartEnrollSportsman>> {
@@ -243,18 +244,55 @@ class AllStartGroups(enrolled: List<StartEnrollSportsman>) {
     }
 }
 
-class ResultSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String):
+class ResultSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String, number: Int, time: Time, place: Int? = null):
     StartEnrollSportsman(surname, name, birthYear, collective, desiredGroup) {
-    val time: Time? = null
-    val place: Int? = null
+    val time: Time
+    val place: Int?
+    val certainNumber: Int
+    init {
+        this.time = time
+        this.place = place
+        this.certainNumber = number
+    }
 
     override fun toString(): String {
         return "$place,$number,${super.toString()},$time"
     }
 }
 
-class AllResultGroups {
+class AllResultGroups(givenGroups: List<Group<ResultSportsman>>) {
+    val groups: List<Group<ResultSportsman>>
+    init {
+        groups = givenGroups
+    }
 
+    constructor(startGroups: AllStartGroups, participants: List<ResultSportsman>):
+            this(sortAndPlaces(startGroups, participants))
+
+    companion object {
+        private fun sortAndPlaces(startGroups: AllStartGroups, participants: List<ResultSportsman>):
+                List<Group<ResultSportsman>> {
+            val result = mutableListOf<Group<ResultSportsman>>()
+            val mapParticipants = participants.groupBy { it.number?:
+                throw IAE("Every sportsman must have a number at this point") }
+            startGroups.groups.forEach { initGroup ->
+                val current: Group<ResultSportsman> = Group(initGroup.name,
+                    initGroup.participants.map {
+                        ResultSportsman(it.surname, it.name, it.birthYear, it.collective,
+             it.desiredGroup?: throw IAE("Every sportsman must have a group at this point"),
+                 it.number?: throw IAE("Every sportsman must have a number at this point"),
+                        participants[it.number?: throw IAE("Every sportsman must have a number at this point")].time)
+                    }.sortedWith { a, b ->
+                        a.time.compareTo(b.time)
+                    }.mapIndexed { index, it -> ResultSportsman(it.surname, it.name, it.birthYear, it.collective,
+             it.desiredGroup?: throw IAE("Every sportsman must have a group at this point"),
+                        it.certainNumber, it.time, index + 1) }
+                )
+                result.add(current)
+            }
+            return result
+        }
+    }
 }
 
 fun main(args: Array<String>) {
