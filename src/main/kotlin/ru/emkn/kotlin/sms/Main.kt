@@ -395,7 +395,7 @@ class AllResultGroups(givenGroups: List<Group<ResultSportsman>>) {
 /*
  * Contains one collective result: the name of the collective and points
  */
-class CollectiveResult(val collective: String, val points: Double) {
+class CollectiveResult(val collective: String, val points: Double, val place: Int? = null) {
     constructor(name: String, results: AllResultGroups): this(name, getPoints(name, results))
     companion object {
         fun getPoints(name: String, results: AllResultGroups): Double {
@@ -418,14 +418,20 @@ class CollectiveResult(val collective: String, val points: Double) {
     }
 
     override fun toString(): String {
-        return "$collective: ${"%.3f".format(points)} points"
+        return "${place?: ""}. collective: ${"%.3f".format(points)} points"
     }
 }
 
 /*
  * Contains all collective results
  */
-class AllCollectiveResults(val results: List<CollectiveResult>) {
+class AllCollectiveResults(results: List<CollectiveResult>) {
+    val results: List<CollectiveResult>
+    init {
+        this.results = results.sortedBy { it.points }.mapIndexed { index, collectiveResult ->
+            CollectiveResult(collectiveResult.collective, collectiveResult.points, index + 1) }
+    }
+
     override fun toString(): String {
         val result = StringBuilder("COLLECTIVE RESULTS\n")
         results.forEach {
