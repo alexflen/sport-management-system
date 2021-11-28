@@ -36,7 +36,7 @@ open class StartEnrollSportsman(surname: String, name: String, birthYear: Int, c
     }
 
     fun toStringStart(): String {
-        return "$number,${super.toString()},$start"
+        return "${number?: ""},${super.toString()},$start"
     }
 }
 
@@ -176,6 +176,23 @@ class StationSportsman(number: Int, stations: List<Station>) {
     }
 }
 
+class StationProtocol(name: String, sportsmen: List<Station>) {
+    val name: String
+    val sportsmen: List<Station>
+    init {
+        this.name = name
+        this.sportsmen = sportsmen
+    }
+
+    override fun toString(): String {
+        val result = StringBuilder("$name\n")
+        sportsmen.forEach {
+            result.appendLine(it.toStringNumber())
+        }
+        return result.toString()
+    }
+}
+
 class Group<T: Sportsman>(name: String, participants: List<T>) {
     val name: String
     val participants: List<T>
@@ -265,8 +282,19 @@ class ResultSportsman(surname: String, name: String, birthYear: Int, collective:
         this.certainNumber = number
     }
 
+    constructor(sportsman: StartEnrollSportsman, results: StationSportsman): this(sportsman.surname, sportsman.name,
+        sportsman.birthYear, sportsman.collective, sportsman.desiredGroup?: throw IAE("A sportsman must have a group"),
+        sportsman.number?: throw IAE("A sportsman must have a number"), getTime(sportsman, results))
+
     override fun toString(): String {
         return "$place,$number,${super.toString()},$time"
+    }
+
+    companion object {
+        fun getTime(sportsman: StartEnrollSportsman, results: StationSportsman): Time {
+            require(sportsman.number == results.number) { "Numbers of sportsman must be equal" }
+            return results.stations.last().time - sportsman.start!!
+        }
     }
 }
 
