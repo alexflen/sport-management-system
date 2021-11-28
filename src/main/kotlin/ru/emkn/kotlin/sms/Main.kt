@@ -36,7 +36,7 @@ open class StartEnrollSportsman(surname: String, name: String, birthYear: Int, c
     }
 
     fun toStringStart(): String {
-        return "$number,${super.toString()},$start"
+        return "${number?: ""},${super.toString()},$start"
     }
 }
 
@@ -165,6 +165,12 @@ class StationSportsman(number: Int, stations: List<Station>) {
     init {
         this.number = number
         this.stations = stations
+
+        for (i in 1..this.stations.size - 1) {
+            if (this.stations[i - 1].time >= this.stations[i].time) {
+                throw IAE("Incorrect time for the passage of the station by the athlete with the number ${this.number}")
+            }
+        }
     }
 
     override fun toString(): String {
