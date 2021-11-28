@@ -390,7 +390,7 @@ class AllResultGroups(givenGroups: List<Group<ResultSportsman>>) {
             return result
         }
     }
-    }
+}
 
 /*
  * Contains one collective result: the name of the collective and points
