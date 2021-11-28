@@ -165,6 +165,12 @@ class StationSportsman(number: Int, stations: List<Station>) {
     init {
         this.number = number
         this.stations = stations
+
+        for (i in 1..this.stations.size - 1) {
+            if (this.stations[i - 1].time >= this.stations[i].time) {
+                throw IAE("Incorrect time for the passage of the station by the athlete with the number ${this.number}")
+            }
+        }
     }
 
     constructor(sportNumber: Int, allStations: ManyStationProtocols): this(sportNumber, filterThis(sportNumber, allStations.stationProtocols))
