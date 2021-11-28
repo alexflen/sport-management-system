@@ -167,12 +167,29 @@ class StationSportsman(number: Int, stations: List<Station>) {
         this.stations = stations
     }
 
+    constructor(sportNumber: Int, allStations: ManyStationProtocols): this(sportNumber, filterThis(sportNumber, allStations.stationProtocols))
+
     override fun toString(): String {
         val result = StringBuilder("$number\n")
         stations.forEach {
             result.appendLine(it.toStringName())
         }
         return result.toString()
+    }
+
+    companion object {
+        fun filterThis(number: Int, allStations: List<StationProtocol>): List<Station> {
+            val result = mutableListOf<Station>()
+            allStations.forEach {
+                it.sportsmen.forEach { station ->
+                    require(it.name == station.name) { "Station names must be equal" }
+                    if (station.number == number) {
+                        result.add(station)
+                    }
+                }
+            }
+            return result
+        }
     }
 }
 
@@ -192,6 +209,8 @@ class StationProtocol(name: String, sportsmen: List<Station>) {
         return result.toString()
     }
 }
+
+data class ManyStationProtocols(val stationProtocols: List<StationProtocol>)
 
 class Group<T: Sportsman>(name: String, participants: List<T>) {
     val name: String
@@ -319,7 +338,7 @@ class AllResultGroups(givenGroups: List<Group<ResultSportsman>>) {
                         ResultSportsman(it.surname, it.name, it.birthYear, it.collective,
              it.desiredGroup?: throw IAE("Every sportsman must have a group at this point"),
                  it.number?: throw IAE("Every sportsman must have a number at this point"),
-                        participants[it.number?: throw IAE("Every sportsman must have a number at this point")].time)
+                        mapParticipants[it.number?: throw IAE("Every sportsman must have a number at this point")]!!.first().time)
                     }.sortedWith { a, b ->
                         a.time.compareTo(b.time)
                     }.mapIndexed { index, it -> ResultSportsman(it.surname, it.name, it.birthYear, it.collective,
@@ -334,5 +353,5 @@ class AllResultGroups(givenGroups: List<Group<ResultSportsman>>) {
 }
 
 fun main(args: Array<String>) {
-    TODO()
+    TODO() // КАРПОВИЧ
 }
