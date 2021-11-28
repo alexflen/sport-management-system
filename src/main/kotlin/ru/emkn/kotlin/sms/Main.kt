@@ -1,7 +1,10 @@
 package ru.emkn.kotlin.sms
 
-typealias IAE = IllegalArgumentException
+typealias IAE = IllegalArgumentException // Used too often so needs to be typealiased
 
+/*
+ * Just a basic Sportsman class for every other Sportsman to inherit the fields
+ */
 open class Sportsman(surname: String, name: String, birthYear: Int, collective: String, category: String? = null) {
     val surname: String
     val name: String
@@ -21,6 +24,10 @@ open class Sportsman(surname: String, name: String, birthYear: Int, collective: 
     }
 }
 
+/*
+ * Unified class for Start and Enroll Sportsman
+ * Can be Start with added info such as number and start time and can be Enroll with basic info
+ */
 open class StartEnrollSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String?, number: Int? = null):
     Sportsman(surname, name, birthYear, collective)  {
     val desiredGroup: String?
@@ -40,6 +47,9 @@ open class StartEnrollSportsman(surname: String, name: String, birthYear: Int, c
     }
 }
 
+/*
+ * Does time logic for this project
+ */
 class Time(time : String) {
     var H: Int
     var M: Int
@@ -140,6 +150,9 @@ class Time(time : String) {
     }
 }
 
+/*
+ * Stores the information about a sportsman performance on a station
+ */
 class Station(name: String, number: Int, time: Time) {
     val name: String
     val number: Int
@@ -159,6 +172,10 @@ class Station(name: String, number: Int, time: Time) {
     }
 }
 
+/*
+ * Contains a list of station results for a single sportsman
+ * Sportsman is identified by his/her number
+ */
 class StationSportsman(number: Int, stations: List<Station>) {
     val number: Int
     val stations: List<Station>
@@ -199,6 +216,10 @@ class StationSportsman(number: Int, stations: List<Station>) {
     }
 }
 
+/*
+ * Contains a protocol for one station
+ * Has a station name and a sportsmen results list (stored in Station universal class)
+ */
 class StationProtocol(name: String, sportsmen: List<Station>) {
     val name: String
     val sportsmen: List<Station>
@@ -218,6 +239,10 @@ class StationProtocol(name: String, sportsmen: List<Station>) {
 
 data class ManyStationProtocols(val stationProtocols: List<StationProtocol>)
 
+/*
+ * A group of sportsmen (may be any of Sportsman classes)
+ * Has a name and a list of sportsmen in it
+ */
 class Group<T: Sportsman>(name: String, participants: List<T>) {
     val name: String
     val participants: List<T>
@@ -251,6 +276,9 @@ class Group<T: Sportsman>(name: String, participants: List<T>) {
     }
 }
 
+/*
+ * Contains all groups, in which sportsmen are assigned a number and a start time
+ */
 class AllStartGroups(enrolled: List<StartEnrollSportsman>) {
     val groups: List<Group<StartEnrollSportsman>>
     init {
@@ -296,6 +324,9 @@ class AllStartGroups(enrolled: List<StartEnrollSportsman>) {
     }
 }
 
+/*
+ * A sportsman class that has a result: his/her time, place and his certainNumber (because it can't be null now)
+ */
 class ResultSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String, number: Int, time: Time, place: Int? = null):
     StartEnrollSportsman(surname, name, birthYear, collective, desiredGroup) {
     val time: Time
@@ -323,6 +354,9 @@ class ResultSportsman(surname: String, name: String, birthYear: Int, collective:
     }
 }
 
+/*
+ * Contains all individual results of each group
+ */
 class AllResultGroups(givenGroups: List<Group<ResultSportsman>>) {
     val groups: List<Group<ResultSportsman>>
     init {
@@ -356,8 +390,51 @@ class AllResultGroups(givenGroups: List<Group<ResultSportsman>>) {
             return result
         }
     }
+    }
+
+/*
+ * Contains one collective result: the name of the collective and points
+ */
+class CollectiveResult(val collective: String, val points: Double) {
+    constructor(name: String, results: AllResultGroups): this(name, getPoints(name, results))
+    companion object {
+        fun getPoints(name: String, results: AllResultGroups): Double {
+            var points = 0.toDouble()
+            results.groups.forEach { group ->
+                var tempPoints = 0.toDouble()
+                for (i in group.participants.indices) {
+                    require(!(i > 0 && group.participants[i].time < group.participants[i - 1].time)) { "Sportsmen must be sorted" }
+                    if (group.participants[i].collective == name) {
+                        tempPoints = 100 * (2 - group.participants[i].time / group.participants.first().time)
+                        break
+                    }
+                }
+                tempPoints = tempPoints.coerceAtLeast(0.toDouble())
+                points += tempPoints
+            }
+
+            return points
+        }
+    }
+
+    override fun toString(): String {
+        return "$collective: ${"%.3f".format(points)} points"
+    }
+}
+
+/*
+ * Contains all collective results
+ */
+class AllCollectiveResults(val results: List<CollectiveResult>) {
+    override fun toString(): String {
+        val result = StringBuilder("COLLECTIVE RESULTS\n")
+        results.forEach {
+            result.appendLine(it)
+        }
+        return result.toString()
+    }
 }
 
 fun main(args: Array<String>) {
-    TODO() // КАРПОВИЧ
+    TODO()
 }
