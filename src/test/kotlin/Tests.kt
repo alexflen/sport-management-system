@@ -74,4 +74,47 @@ internal class Tests {
         val now = Group("traktor", cur)
         assertEquals("traktor\n,karpovich,evgeny,2003,,12:34:56\n123,shilyaeva,ekaterina,2003,,21:00:59\n", now.toStringStart())
     }
+
+    @Test
+    fun checkAllStartGroups() {
+        val cur: List<StartEnrollSportsman> = listOf(StartEnrollSportsman("karpovich", "evgeny", 2003, "hockey", null), StartEnrollSportsman("shilyaeva", "ekaterina", 2003, "egoi", "oge", 123))
+        val tmp = AllStartGroups(cur)
+        for (key in tmp.groups) {
+            var currentTime = Time("12:00:00")
+            for (elem in  key.participants) {
+                assert(elem.desiredGroup != null)
+                assertEquals(currentTime, elem.start)
+                currentTime++
+            }
+        }
+    }
+
+    @Test
+    fun checkStationProtocol() {
+        val cur: List<Station> = listOf(Station("football", 123, Time("00:00:00")), Station("football", 777, Time("22:22:22")))
+        val tmp = StationProtocol("football", cur)
+        assertEquals("football\n123,00:00:00\n777,22:22:22\n", tmp.toString())
+    }
+
+    @Test
+    fun checkResultSportsman() {
+        val tmp = ResultSportsman("karpovich", "evgeny", 2003, "hockey", "icpc", 123, Time("12:00:00"), 1)
+        assertEquals("1,123,karpovich,evgeny,2003,,12:00:00", tmp.toString())
+    }
+
+    @Test
+    fun checkCollectiveResult() {
+        val cur = CollectiveResult("we", 1.234, 3)
+        assertEquals("3. we: 1,234 points", cur.toString())
+    }
+
+    @Test
+    fun checkAllCollectiveResults() {
+        val a = CollectiveResult("i", 1.234, 3)
+        val b = CollectiveResult("you", 1.09, 2)
+        val c = CollectiveResult("it", 1.5612, 1)
+        val tmp: List<CollectiveResult> = listOf(a, b, c)
+        val cur = AllCollectiveResults(tmp)
+        assertEquals("COLLECTIVE RESULTS\n1. you: 1,090 points\n2. i: 1,234 points\n3. it: 1,561 points\n", cur.toString())
+    }
 }

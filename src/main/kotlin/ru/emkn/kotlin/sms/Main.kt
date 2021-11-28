@@ -343,7 +343,7 @@ class ResultSportsman(surname: String, name: String, birthYear: Int, collective:
         sportsman.number?: throw IAE("A sportsman must have a number"), getTime(sportsman, results))
 
     override fun toString(): String {
-        return "$place,$number,${super.toString()},$time"
+        return "$place,$certainNumber,${super.toString()},$time"
     }
 
     companion object {
@@ -418,7 +418,7 @@ class CollectiveResult(val collective: String, val points: Double, val place: In
     }
 
     override fun toString(): String {
-        return "${place?: ""}. collective: ${"%.3f".format(points)} points"
+        return "${place?: ""}. $collective: ${"%.3f".format(points)} points"
     }
 }
 
