@@ -343,7 +343,7 @@ class ResultSportsman(surname: String, name: String, birthYear: Int, collective:
         sportsman.number?: throw IAE("A sportsman must have a number"), getTime(sportsman, results))
 
     override fun toString(): String {
-        return "$place,$number,${super.toString()},$time"
+        return "$place,$certainNumber,${super.toString()},$time"
     }
 
     companion object {
