@@ -1,5 +1,7 @@
 package ru.emkn.kotlin.sms
 
+import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+
 typealias IAE = IllegalArgumentException // Used too often so needs to be typealiased
 
 /*
@@ -442,5 +444,20 @@ class AllCollectiveResults(results: List<CollectiveResult>) {
 }
 
 fun main(args: Array<String>) {
-    TODO()
+    for (key in args) {
+        var it = 0
+        var name = ""
+        var cur:MutableList<StartEnrollSportsman> = mutableListOf()
+        csvReader (). open ( key ) {
+            readAllAsSequence (). forEach {row :  List < String > ->
+                it += 1
+                if (it == 1) {
+                    name = row[0]
+                } else {
+                    cur.add(StartEnrollSportsman(row[0], row[1], row[2].toInt(), row[3], row[4]))
+                }
+            }
+        }
+        Group(name, cur)
+    }
 }
