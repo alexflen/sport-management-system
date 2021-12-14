@@ -1,54 +1,59 @@
 package ru.emkn.kotlin.sms
 
-import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.*
 
 // Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import java.awt.Image
 
+enum class TabTypes(val title: String) {
+    GROUPS("Groups"),
+    DIST("Distances"),
+    TEAMS("Teams"),
+    PARTICIPANTS("Participants"),
+    MARKS("Marks on check points"),
+    RESULTS("Results")
+}
 
-fun main() = application {
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "Sport Management System",
-        state = rememberWindowState(width = 500.dp, height = 500.dp)
-    ) {
-        val count = remember { mutableStateOf(0) }
-        MaterialTheme {
-            Column(Modifier.fillMaxSize(), Arrangement.spacedBy(5.dp)) {
-                Button(modifier = Modifier.align(Alignment.CenterHorizontally),
-                    onClick = {
-                        count.value++
-                    }) {
-                    Text(if (count.value == 0) "Hello World" else "Clicked ${count.value}!")
+@Composable
+@Preview
+fun myApplication() {
+    val currentTab = remember { mutableStateOf(TabTypes.GROUPS) }
+
+    MaterialTheme {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                TabTypes.values().forEach { iterated ->
+                    Button(modifier = Modifier.align(Alignment.CenterVertically), onClick = {
+                        currentTab.value = iterated
+                    }) { Text(iterated.title) }
                 }
-                Button(modifier = Modifier.align(Alignment.CenterHorizontally),
-                    onClick = {
-                        count.value = 0
-                    }) {
-                    Text("Reset")
-                }
-
             }
+            Text(currentTab.value.title)
         }
-
-
     }
 }
+
+fun main() = application {
+    Window(onCloseRequest = ::exitApplication, title = "Sport Management System",
+        state = rememberWindowState(width = 800.dp, height = 300.dp)
+    ) {
+        myApplication()
+    }
+}
+
 /*
 fun main(args: Array<String>) {
     for (key in args) {
