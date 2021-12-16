@@ -30,22 +30,39 @@ open class Sportsman(surname: String, name: String, birthYear: Int, collective: 
  * Unified class for Start and Enroll Sportsman
  * Can be Start with added info such as number and start time and can be Enroll with basic info
  */
-open class StartEnrollSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String?, number: Int? = null):
-    Sportsman(surname, name, birthYear, collective)  {
+open class EnrollSportsman(surname: String, name: String, birthYear: Int,
+                           collective: String, category: String?, desiredGroup: String?):
+    Sportsman(surname, name, birthYear, collective, category)  {
     val desiredGroup: String?
-    var start: Time? = null
-    var number: Int?
     init {
         this.desiredGroup = desiredGroup
-        this.number = number
     }
 
-    fun toStringEnroll(): String {
+    override fun toString(): String {
         return "${super.toString()},${desiredGroup ?: ""},$collective"
     }
+}
 
-    fun toStringStart(): String {
-        return "${number?: ""},${super.toString()},$start"
+open class StartSportsman(surname: String, name: String, birthYear: Int, collective: String, category: String?,
+                          group: String, number: Int):
+    Sportsman(surname, name, birthYear, collective, category) {
+    val number: Int
+    val group: String
+    lateinit var start: Time
+    init {
+        this.number = number
+        this.group = group
+    }
+
+    constructor(enrolled: EnrollSportsman, group: String, number: Int): this(enrolled.surname, enrolled.name, enrolled.birthYear,
+        enrolled.collective, enrolled.category, group, number)
+    constructor(surname: String, name: String, birthYear: Int, collective: String, category: String?,
+                group: String, number: Int, time: Time): this(surname, name, birthYear, collective, category, group, number) {
+                    this.start = time
+                }
+
+    override fun toString(): String {
+        return "$number,${super.toString()},$start"
     }
 }
 
@@ -185,7 +202,7 @@ class StationSportsman(number: Int, stations: List<Station>) {
         this.number = number
         this.stations = stations
 
-        for (i in 1..this.stations.size - 1) {
+        for (i in 1 until this.stations.size) {
             if (this.stations[i - 1].time >= this.stations[i].time) {
                 throw IAE("Incorrect time for the passage of the station by the athlete with the number ${this.number}")
             }
@@ -256,10 +273,10 @@ class Group<T: Sportsman>(name: String, participants: List<T>) {
     fun toStringStart(): String {
         val result = StringBuilder("$name\n")
         participants.forEach {
-            if (it is StartEnrollSportsman) {
-                result.appendLine(it.toStringStart())
+            if (it is StartSportsman) {
+                result.appendLine(it.toString())
             } else {
-                throw IAE("Wrong Sportsman; expected StartEnrollSportsman")
+                throw IAE("Wrong Sportsman; expected StartSportsman")
             }
         }
         return result.toString()
@@ -281,35 +298,29 @@ class Group<T: Sportsman>(name: String, participants: List<T>) {
 /*
  * Contains all groups, in which sportsmen are assigned a number and a start time
  */
-class AllStartGroups(enrolled: List<StartEnrollSportsman>) {
-    val groups: List<Group<StartEnrollSportsman>>
+class AllStartGroups(enrolled: List<EnrollSportsman>) {
+    val groups: List<Group<StartSportsman>>
     init {
         groups = doEverythingToMakeGroups(enrolled)
     }
 
     companion object {
-        private fun assignNumbers(enrolled: List<StartEnrollSportsman>): List<StartEnrollSportsman> {
+        private fun assignNumbersAndGroups(enrolled: List<EnrollSportsman>): List<StartSportsman> {
             val shuffled = enrolled.shuffled()
-            val result = mutableListOf<StartEnrollSportsman>()
+            val result = mutableListOf<StartSportsman>()
             for (i in shuffled.indices) {
-                result.add(shuffled[i])
-                result.last().number = i + 1
+                result.add(StartSportsman(shuffled[i],
+                    shuffled[i].desiredGroup?: "unspecified", i + 1))
             }
             return result
         }
 
-        private fun assignGroup(enrolled: List<StartEnrollSportsman>): List<StartEnrollSportsman> {
-            return enrolled.map { StartEnrollSportsman(it.surname, it.name,
-                it.birthYear, it.collective, it.desiredGroup?: "unspecified") }
+        private fun divideInGroups(sportsmen: List<StartSportsman>): List<Group<StartSportsman>> {
+            return sportsmen.groupBy { it.group }.map { Group(it.key, it.value) }
         }
 
-        private fun divideInGroups(enrolled: List<StartEnrollSportsman>): List<Group<StartEnrollSportsman>> {
-            return enrolled.groupBy { it.desiredGroup?:
-            throw IAE("Group must be assigned") }.map { Group(it.key, it.value) }
-        }
-
-        private fun assignTime(formedGroups: List<Group<StartEnrollSportsman>>): List<Group<StartEnrollSportsman>> {
-            val result = mutableListOf<Group<StartEnrollSportsman>>()
+        private fun assignTime(formedGroups: List<Group<StartSportsman>>): List<Group<StartSportsman>> {
+            val result = mutableListOf<Group<StartSportsman>>()
             for (i in formedGroups.indices) {
                 var currentTime = Time("12:00:00")
                 for (j in formedGroups[i].participants.indices) {
@@ -320,8 +331,8 @@ class AllStartGroups(enrolled: List<StartEnrollSportsman>) {
             return result
         }
 
-        fun doEverythingToMakeGroups(enrolled: List<StartEnrollSportsman>): List<Group<StartEnrollSportsman>> {
-            return assignTime(divideInGroups(assignGroup(assignNumbers(enrolled))))
+        fun doEverythingToMakeGroups(enrolled: List<EnrollSportsman>): List<Group<StartSportsman>> {
+            return assignTime(divideInGroups(assignNumbersAndGroups(enrolled)))
         }
     }
 }
@@ -329,29 +340,28 @@ class AllStartGroups(enrolled: List<StartEnrollSportsman>) {
 /*
  * A sportsman class that has a result: his/her time, place and his certainNumber (because it can't be null now)
  */
-class ResultSportsman(surname: String, name: String, birthYear: Int, collective: String, desiredGroup: String, number: Int, time: Time, place: Int? = null):
-    StartEnrollSportsman(surname, name, birthYear, collective, desiredGroup) {
+class ResultSportsman(surname: String, name: String, birthYear: Int, collective: String, category: String?, group: String, number: Int, time: Time, place: Int):
+    StartSportsman(surname, name, birthYear, collective, category, group, number) {
+    val place: Int
     val time: Time
-    val place: Int?
-    val certainNumber: Int
     init {
         this.time = time
         this.place = place
-        this.certainNumber = number
     }
 
-    constructor(sportsman: StartEnrollSportsman, results: StationSportsman): this(sportsman.surname, sportsman.name,
-        sportsman.birthYear, sportsman.collective, sportsman.desiredGroup?: throw IAE("A sportsman must have a group"),
-        sportsman.number?: throw IAE("A sportsman must have a number"), getTime(sportsman, results))
+    constructor(sportsman: StartSportsman, results: StationSportsman):
+            this(sportsman.surname, sportsman.name,
+        sportsman.birthYear, sportsman.collective, sportsman.category, sportsman.group,
+        sportsman.number, getTime(sportsman, results), 0)
 
     override fun toString(): String {
-        return "$place,$certainNumber,${super.toString()},$time"
+        return "$place,$number,${super.toString()},$time"
     }
 
     companion object {
-        fun getTime(sportsman: StartEnrollSportsman, results: StationSportsman): Time {
+        fun getTime(sportsman: StartSportsman, results: StationSportsman): Time {
             require(sportsman.number == results.number) { "Numbers of sportsman must be equal" }
-            return results.stations.last().time - sportsman.start!!
+            return results.stations.last().time - sportsman.start
         }
     }
 }
@@ -372,22 +382,18 @@ class AllResultGroups(givenGroups: List<Group<ResultSportsman>>) {
         private fun sortAndPlaces(startGroups: AllStartGroups, participants: List<ResultSportsman>):
                 List<Group<ResultSportsman>> {
             val result = mutableListOf<Group<ResultSportsman>>()
-            val mapParticipants = participants.groupBy { it.number?:
-            throw IAE("Every sportsman must have a number at this point") }
+            val mapParticipants = participants.groupBy { it.number }.mapValues { it.value.first() }
             startGroups.groups.forEach { initGroup ->
-                val current: Group<ResultSportsman> = Group(initGroup.name,
+                result.add(Group(initGroup.name,
                     initGroup.participants.map {
                         ResultSportsman(it.surname, it.name, it.birthYear, it.collective,
-                            it.desiredGroup?: throw IAE("Every sportsman must have a group at this point"),
-                            it.number?: throw IAE("Every sportsman must have a number at this point"),
-                            mapParticipants[it.number?: throw IAE("Every sportsman must have a number at this point")]!!.first().time)
+                            it.category, it.group, it.number,
+                            mapParticipants[it.number]!!.time, 0)
                     }.sortedWith { a, b ->
                         a.time.compareTo(b.time)
                     }.mapIndexed { index, it -> ResultSportsman(it.surname, it.name, it.birthYear, it.collective,
-                        it.desiredGroup?: throw IAE("Every sportsman must have a group at this point"),
-                        it.certainNumber, it.time, index + 1) }
-                )
-                result.add(current)
+                        it.category, it.group, it.number, it.time, index + 1) }
+                ))
             }
             return result
         }
