@@ -21,50 +21,49 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 
-enum class TabTypes(val title: String) {
-    GROUPS("Groups"),
-    DIST("Distances"),
-    TEAMS("Teams"),
-    PARTICIPANTS("Participants"),
-    MARKS("Marks on check points"),
-    RESULTS("Results")
+enum class TabTypes(val title: String, val header: List<String>) {
+    TEAMS("Teams", listOf("Team", "Surname", "Name", "BirthYear", "Category", "Group")), // EnrollSposrtsman
+    GROUPS("Groups", listOf("Group", "Number", "Surname", "Name", "BirthYear", "Category", "StartTime", "DistanceName")), // StartSportsman
+    DIST("Distances", listOf("Group", "CheckPointName")), // Station
+    //PARTICIPANTS("Participants", listOf("Surname", "Name", "BirthYear", "Team", "Category")),
+    MARKS("Marks on check points", listOf("Number", "NameOfPoint", "Mark(Time)")), //StationSportsman
+    RESULTS("Results", listOf("Group", "Place", "Number", "Surname", "Name", "BirthYear", "Category", "Time")) // ResultSportsman
 }
 
 enum class ColumnTypes {
-    INT, STRING, DOUBLE
+    INT, STRING, TIME
 }
 
 enum class States {
-    OK, WRONG, EMPTY, ONLYHEADER
+    OK, WRONG, EMPTY
 }
 
 data class Report(val state: States, val message: String = "")
 
-class TabInfo<T>(queryCSV: MutableState<String>,
+class TabInfo<T>(initCSV: MutableState<String>,
               plainCSV: MutableState<String>,
               importFileName: MutableState<String>,
               exportFileName: MutableState<String>,
               warning: MutableState<String>,
               expandSortChoice: MutableState<Boolean>,
               state: MutableState<States>,
-              queryLines: MutableState<List<T>>,
-              csvLines: MutableState<List<List<T>>>
+              initLines: MutableState<List<T>>,
+              csvLines: MutableState<List<T>>
               ) {
     //var state = States.EMPTY
     //var queryLines = listOf<String>()
     //var csvLines = listOf<List<String>>()
-    var queryCSV: MutableState<String>
+    var initCSV: MutableState<String>
     var plainCSV: MutableState<String>
     var importFileName: MutableState<String>
     var exportFileName: MutableState<String>
     var warning: MutableState<String>
     var expandSortChoice: MutableState<Boolean>
     var state: MutableState<States>
-    var queryLines: MutableState<List<T>>
-    var csvLines: MutableState<List<List<T>>>
-
+    var initLines: MutableState<List<T>>
+    var csvLines: MutableState<List<T>>
     init {
-        this.queryCSV = queryCSV
+        this.initCSV = initCSV
         this.plainCSV = plainCSV
         this.csvLines = csvLines
         this.expandSortChoice = expandSortChoice
@@ -72,21 +71,12 @@ class TabInfo<T>(queryCSV: MutableState<String>,
         this.importFileName = importFileName
         this.state = state
         this.warning = warning
-        this.queryLines = queryLines
-    }
-
-    private fun updatePlainCSV() {
-        plainCSV.value = csvLines.value.joinToString("\n") { it.joinToString(",") }
-    }
-
-    private fun updateQueryCSV() {
-        queryCSV.value = queryLines.value.joinToString("\n")
+        this.initLines = initLines
     }
 
     fun checkIfOkCSV(rows: List<List<String>>): Report {
         // Check if all have the same number of columns
         if (rows.isEmpty()) return Report(States.EMPTY, "Warning: empty CSV")
-        if (rows.size == 1) return Report(States.ONLYHEADER, "Warning: only header in CSV")
         val headerSize = rows[0].size
         rows.forEachIndexed { index, it ->
             if (it.size != headerSize) {
@@ -106,22 +96,34 @@ class TabInfo<T>(queryCSV: MutableState<String>,
         val report = checkIfOkCSV(table)
         state.value = report.state
         warning.value = report.message
-        if (report.state == States.OK) {
-            updateCSVLines(table)
+    }
+
+    private fun getTextLinesFromT(): List<List<String>> {
+        return csvLines.value.map {
+            it.toString().split(",")
         }
     }
 
-    fun sortBy(index: Int) {
+    private fun getColumnType(table: List<List<String>>, column: Int): ColumnTypes {
+        var result = ColumnTypes.INT
+        table.forEach {
+            if (result == ColumnTypes.INT && it[column].toIntOrNull() == null) {
+                result = ColumnTypes.TIME
+            }
+            if (result == ColumnTypes.TIME && it[column].toTimeOrNull() == null) {
+                result = ColumnTypes.STRING
+            }
+        }
+        return result
+    }
+
+    fun sortByField(index: Int) {
         require(state.value == States.OK)
-        require(index >= 0 && index < csvLines.value[0].size)
-        queryCSV.value = when (columnType) {
-            ColumnTypes.INT -> csvLines.value.drop(1).sortedBy { it[index].toInt() }
-            ColumnTypes.DOUBLE -> csvLines.value.drop(1).sortedBy { it[index].toDouble() }
-            ColumnTypes.STRING -> csvLines.value.drop(1).sortedBy { it[index] }
-        }.joinToString("\n") { it.joinToString(",") }
-        println("\t ${queryCSV.value}")
-        println("\t ${csvLines.value}")
-        updateQueryCSV()
+        val table = getTextLinesFromT()
+        if (table.isNotEmpty())
+            require(index >= 0 && index < table[0].size)
+        val columnType = getColumnType(table, index)
+        plainCSV.value = sortTableBy(table, index, columnType).joinToString("\n") { it.joinToString(",") }
     }
 }
 
@@ -134,8 +136,7 @@ fun myApplication() {
             remember { mutableStateOf("") }, remember { mutableStateOf("") },
         remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
         remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
-        remember { mutableStateOf(listOf<String>()) }, remember { mutableStateOf(listOf<List<String>>()) },
-        remember { mutableStateOf(listOf<ColumnTypes>()) }) }
+        remember { mutableStateOf(listOf<String>()) }, remember { mutableStateOf(listOf<List<String>>()) }) }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
@@ -171,7 +172,7 @@ fun myApplication() {
                     }
 
                     TextField(value = tabInfos[currentTab.value]!!.plainCSV.value,
-                        onValueChange = { tabInfos[currentTab.value]!!.updateWhenCSV(it); println(tabInfos[currentTab.value]!!.queryCSV.value) },
+                        onValueChange = { tabInfos[currentTab.value]!!.updateWhenCSV(it) },
                         modifier = Modifier
                             .height(500.dp)
                             .width(300.dp),
@@ -191,10 +192,10 @@ fun myApplication() {
                             .width(200.dp)
                             //.background(MaterialTheme.colors.surface)
                     ) {
-                       tabInfos[currentTab.value]!!.plainCSV.value.split("\n")[0].split(",").forEachIndexed { index, title ->
+                       currentTab.value.header.forEachIndexed { index, title ->
                             DropdownMenuItem(
                                 onClick = {
-                                    tabInfos[currentTab.value]!!.sortBy(index)
+                                    tabInfos[currentTab.value]!!.sortByField(index)
                                 }) {
                                 Text(text = title)
                             }
@@ -202,7 +203,7 @@ fun myApplication() {
                     }
                 }
 
-                Column(verticalArrangement = Arrangement.Top) {
+                /*Column(verticalArrangement = Arrangement.Top) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.width(300.dp)) {
                         TextField(value = tabInfos[currentTab.value]!!.exportFileName.value,
@@ -223,7 +224,7 @@ fun myApplication() {
                         label = { Text("${currentTab.value.title} query output") }
                     )
 
-                }
+                }*/
             }
         }
     }

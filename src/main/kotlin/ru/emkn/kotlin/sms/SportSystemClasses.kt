@@ -39,7 +39,7 @@ open class EnrollSportsman(surname: String, name: String, birthYear: Int,
     }
 
     override fun toString(): String {
-        return "${super.toString()},${desiredGroup ?: ""},$collective"
+        return "$collective,${super.toString()},${desiredGroup ?: ""}"
     }
 }
 
@@ -48,6 +48,7 @@ open class StartSportsman(surname: String, name: String, birthYear: Int, collect
     Sportsman(surname, name, birthYear, collective, category) {
     val number: Int
     val group: String
+    lateinit var distanceName: String
     lateinit var start: Time
     init {
         this.number = number
@@ -64,6 +65,10 @@ open class StartSportsman(surname: String, name: String, birthYear: Int, collect
     override fun toString(): String {
         return "$number,${super.toString()},$start"
     }
+
+    fun toStringCsv(): String {
+        return "$group,$number,${super.toString()},$start$"
+    }
 }
 
 /*
@@ -76,14 +81,14 @@ class Time(time : String) {
     init {
         val numbers = time.split(':')
         if (numbers.size != 3) {
-            throw IllegalStateException("Incorrect time")
+            throw IllegalArgumentException("Incorrect time")
         }
         if (numbers[0].toIntOrNull() == null) {
-            throw IllegalStateException("Incorrect H in time")
+            throw IllegalArgumentException("Incorrect H in time")
         } else {
             this.H = numbers.get(0).toInt()
             if (this.H < 0 || this.H > 23) {
-                throw IllegalStateException("Incorrect H in time")
+                throw IllegalArgumentException("Incorrect H in time")
             }
         }
 
@@ -169,10 +174,19 @@ class Time(time : String) {
     }
 }
 
+fun String.toTimeOrNull(): Time? {
+    return try {
+        Time(this)
+    }
+    catch (e: IllegalArgumentException){
+        null
+    }
+}
+
 /*
  * Stores the information about a sportsman performance on a station
  */
-class Station(name: String, number: Int, time: Time) {
+class StationPerformance(name: String, number: Int, time: Time) {
     val name: String
     val number: Int
     val time: Time
@@ -195,9 +209,9 @@ class Station(name: String, number: Int, time: Time) {
  * Contains a list of station results for a single sportsman
  * Sportsman is identified by his/her number
  */
-class StationSportsman(number: Int, stations: List<Station>) {
+class StationSportsman(number: Int, stations: List<StationPerformance>) {
     val number: Int
-    val stations: List<Station>
+    val stations: List<StationPerformance>
     init {
         this.number = number
         this.stations = stations
@@ -212,16 +226,16 @@ class StationSportsman(number: Int, stations: List<Station>) {
     constructor(sportNumber: Int, allStations: ManyStationProtocols): this(sportNumber, filterThis(sportNumber, allStations.stationProtocols))
 
     override fun toString(): String {
-        val result = StringBuilder("$number\n")
+        val result = StringBuilder()
         stations.forEach {
-            result.appendLine(it.toStringName())
+            result.appendLine("$number,${it.toStringName()}")
         }
         return result.toString()
     }
 
     companion object {
-        fun filterThis(number: Int, allStations: List<StationProtocol>): List<Station> {
-            val result = mutableListOf<Station>()
+        fun filterThis(number: Int, allStations: List<StationProtocol>): List<StationPerformance> {
+            val result = mutableListOf<StationPerformance>()
             allStations.forEach {
                 it.sportsmen.forEach { station ->
                     require(it.name == station.name) { "Station names must be equal" }
@@ -239,9 +253,9 @@ class StationSportsman(number: Int, stations: List<Station>) {
  * Contains a protocol for one station
  * Has a station name and a sportsmen results list (stored in Station universal class)
  */
-class StationProtocol(name: String, sportsmen: List<Station>) {
+class StationProtocol(name: String, sportsmen: List<StationPerformance>) {
     val name: String
-    val sportsmen: List<Station>
+    val sportsmen: List<StationPerformance>
     init {
         this.name = name
         this.sportsmen = sportsmen
@@ -257,6 +271,13 @@ class StationProtocol(name: String, sportsmen: List<Station>) {
 }
 
 data class ManyStationProtocols(val stationProtocols: List<StationProtocol>)
+
+
+class Station(val group: String, val name: String) {
+    override fun toString(): String {
+        return "$group,$name"
+    }
+}
 
 /*
  * A group of sportsmen (may be any of Sportsman classes)
@@ -355,7 +376,7 @@ class ResultSportsman(surname: String, name: String, birthYear: Int, collective:
         sportsman.number, getTime(sportsman, results), 0)
 
     override fun toString(): String {
-        return "$place,$number,${super.toString()},$time"
+        return "$group,$place,$number,$surname,$name,$birthYear,${category?: ""},$time"
     }
 
     companion object {
@@ -447,4 +468,19 @@ class AllCollectiveResults(results: List<CollectiveResult>) {
         }
         return result.toString()
     }
+}
+
+fun sortTableBy(table: List<List<String>>, column: Int, columnType: ColumnTypes): List<List<String>> {
+    return table
+    TODO()
+}
+
+fun sortTableByDescending(table: List<List<String>>, column: Int, columnType: ColumnTypes): List<List<String>> {
+    return table
+    TODO()
+}
+
+fun filterTableBy(table: List<List<String>>, column: Int, equalTo: String): List<List<String>> {
+    return table
+    TODO()
 }
