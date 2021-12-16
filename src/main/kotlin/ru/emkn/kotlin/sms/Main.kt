@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
@@ -23,11 +24,11 @@ import androidx.compose.ui.window.rememberWindowState
 
 enum class TabTypes(val title: String, val header: List<String>) {
     TEAMS("Teams", listOf("Team", "Surname", "Name", "BirthYear", "Category", "Group")), // EnrollSposrtsman
-    GROUPS("Groups", listOf("Group", "Number", "Surname", "Name", "BirthYear", "Category", "StartTime", "DistanceName")), // StartSportsman
+    GROUPS("Groups", listOf("Group", "Number", "Surname", "Name", "BirthYear", "Category", "Collective", "StartTime")), // StartSportsman
     DIST("Distances", listOf("Group", "CheckPointName")), // Station
     //PARTICIPANTS("Participants", listOf("Surname", "Name", "BirthYear", "Team", "Category")),
-    MARKS("Marks on check points", listOf("Number", "NameOfPoint", "Mark(Time)")), //StationSportsman
-    RESULTS("Results", listOf("Group", "Place", "Number", "Surname", "Name", "BirthYear", "Category", "Time")) // ResultSportsman
+    MARKS("Marks on check points", listOf("Number", "NameOfPoint", "Mark(Time)")), //StationPerformance
+    RESULTS("Results", listOf("Group", "Place", "Number", "Surname", "Name", "BirthYear", "Collective", "Category", "Time")) // ResultSportsman
 }
 
 enum class ColumnTypes {
@@ -98,6 +99,12 @@ class TabInfo<T>(initCSV: MutableState<String>,
         warning.value = report.message
     }
 
+    fun overrideClassValues(): Report {
+        require(state.value == States.OK)
+        val table = plainCSV.value.split("\n").map { it.split(',') }
+        csvLines.value = TODO()
+    }
+
     private fun getTextLinesFromT(): List<List<String>> {
         return csvLines.value.map {
             it.toString().split(",")
@@ -129,14 +136,14 @@ class TabInfo<T>(initCSV: MutableState<String>,
 
 @Composable
 @Preview
-fun myApplication() {
+fun myApplication(width: Dp, height: Dp) {
     MaterialTheme {
         val currentTab = remember { mutableStateOf(TabTypes.GROUPS) }
         val tabInfos = TabTypes.values().associateWith { TabInfo(remember { mutableStateOf("") },
             remember { mutableStateOf("") }, remember { mutableStateOf("") },
         remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
         remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
-        remember { mutableStateOf(listOf<String>()) }, remember { mutableStateOf(listOf<List<String>>()) }) }
+        remember { mutableStateOf(listOf()) }, remember { mutableStateOf(listOf()) }) }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
@@ -153,13 +160,13 @@ fun myApplication() {
                 Column(verticalArrangement = Arrangement.Top) {
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.width(300.dp)
+                        modifier = Modifier.width(500.dp)
                     ) {
                         TextField(
                             value = tabInfos[currentTab.value]!!.importFileName.value,
                             onValueChange = { tabInfos[currentTab.value]!!.importFileName.value = it },
                             label = { Text("Import from file") },
-                            modifier = Modifier.width(200.dp)
+                            modifier = Modifier.width(400.dp)
                         )
                         Button(modifier = Modifier.align(Alignment.CenterVertically), onClick = {
                             tabInfos[currentTab.value]!!.updateWhenCSV(
@@ -175,16 +182,19 @@ fun myApplication() {
                         onValueChange = { tabInfos[currentTab.value]!!.updateWhenCSV(it) },
                         modifier = Modifier
                             .height(500.dp)
-                            .width(300.dp),
+                            .width(500.dp),
                         label = { Text("${currentTab.value.title} csv info") })
                     Text(tabInfos[currentTab.value]!!.warning.value, color = Color.Red, fontSize = 15.sp,
-                    modifier = Modifier.width(300.dp))
+                    modifier = Modifier.width(500.dp))
                 }
 
                 Column(verticalArrangement = Arrangement.Center) {
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally), onClick = {
+                        tabInfos[currentTab.value]!!.overrideClassValues()
+                    }) { Text("Check & Generate") }
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally), onClick = {
                         tabInfos[currentTab.value]!!.expandSortChoice.value = true
-                    }) { Icon(Icons.Rounded.KeyboardArrowUp, "Import") }
+                    }) { Icon(Icons.Rounded.KeyboardArrowUp, "Sort") }
                     DropdownMenu(
                         expanded = tabInfos[currentTab.value]!!.expandSortChoice.value,
                         onDismissRequest = { tabInfos[currentTab.value]!!.expandSortChoice.value = false },
@@ -242,7 +252,7 @@ fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "Sport Management System",
         state = rememberWindowState(width = 800.dp, height = 720.dp)
     ) {
-        myApplication()
+        myApplication(800.dp, 720.dp)
     }
 }
 

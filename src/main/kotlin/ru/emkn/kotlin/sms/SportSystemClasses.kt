@@ -32,11 +32,14 @@ open class Sportsman(surname: String, name: String, birthYear: Int, collective: 
  */
 open class EnrollSportsman(surname: String, name: String, birthYear: Int,
                            collective: String, category: String?, desiredGroup: String?):
-    Sportsman(surname, name, birthYear, collective, category)  {
+    Sportsman(surname, name, birthYear, collective, category) {
     val desiredGroup: String?
     init {
         this.desiredGroup = desiredGroup
     }
+
+    //for CSV
+    constructor(split: List<String>): this(split[1], split[2], split[3].toInt(), split[0], split[4], split[5])
 
     override fun toString(): String {
         return "$collective,${super.toString()},${desiredGroup ?: ""}"
@@ -57,17 +60,18 @@ open class StartSportsman(surname: String, name: String, birthYear: Int, collect
 
     constructor(enrolled: EnrollSportsman, group: String, number: Int): this(enrolled.surname, enrolled.name, enrolled.birthYear,
         enrolled.collective, enrolled.category, group, number)
+
     constructor(surname: String, name: String, birthYear: Int, collective: String, category: String?,
                 group: String, number: Int, time: Time): this(surname, name, birthYear, collective, category, group, number) {
                     this.start = time
                 }
 
-    override fun toString(): String {
-        return "$number,${super.toString()},$start"
-    }
+    //for CSV
+    constructor(split: List<String>): this(split[2], split[3], split[4].toInt(), split[6], split[5],
+        split[0], split[1].toInt(), Time(split[7]))
 
-    fun toStringCsv(): String {
-        return "$group,$number,${super.toString()},$start$"
+    override fun toString(): String {
+        return "$group,$number,${super.toString()},$collective,$start"
     }
 }
 
@@ -196,12 +200,19 @@ class StationPerformance(name: String, number: Int, time: Time) {
         this.time = time
     }
 
+    //for CSV
+    constructor(split: List<String>): this(split[0], split[1].toInt(), Time(split[2]))
+
     fun toStringName(): String {
         return "$name,$time"
     }
 
     fun toStringNumber(): String {
         return "$number,$time"
+    }
+
+    override fun toString(): String {
+        return "$number,$name,$time"
     }
 }
 
@@ -274,6 +285,9 @@ data class ManyStationProtocols(val stationProtocols: List<StationProtocol>)
 
 
 class Station(val group: String, val name: String) {
+    //for CSV
+    constructor(split: List<String>): this(split[0], split[1])
+
     override fun toString(): String {
         return "$group,$name"
     }
@@ -374,6 +388,10 @@ class ResultSportsman(surname: String, name: String, birthYear: Int, collective:
             this(sportsman.surname, sportsman.name,
         sportsman.birthYear, sportsman.collective, sportsman.category, sportsman.group,
         sportsman.number, getTime(sportsman, results), 0)
+
+    //for CSV
+    constructor(split: List<String>): this(split[3], split[4], split[5].toInt(), split[6], split[7], split[0],
+        split[2].toInt(), Time(split[8]), split[1].toInt())
 
     override fun toString(): String {
         return "$group,$place,$number,$surname,$name,$birthYear,${category?: ""},$time"
