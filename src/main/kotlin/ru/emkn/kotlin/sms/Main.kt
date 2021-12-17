@@ -1,5 +1,8 @@
 package ru.emkn.kotlin.sms
 
+import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+import java.util.*
+
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -273,11 +276,22 @@ fun myApplication(width: Dp, height: Dp) {
 }
 
 fun loadCSVToFile(tab: MutableState<TabTypes>, exportFileName: Any) {
-    TODO()
+
 }
 
 fun loadFromCSVFile(tab: MutableState<TabTypes>, importFileName: String): String {
-    TODO()
+    var currentName = ""
+    val result = StringBuilder()
+    csvReader (). open ( importFileName ) {
+        readAllAsSequence (). forEach {row :  List < String > ->
+            if (row[1].isEmpty()) {
+                currentName = row.first()
+            } else {
+                result.appendLine(currentName + row.joinToString(prefix = ",", separator = ","))
+            }
+        }
+    }
+    return result.toString()
 }
 
 fun main() = application {

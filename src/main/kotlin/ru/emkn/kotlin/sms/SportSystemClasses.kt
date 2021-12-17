@@ -1,6 +1,7 @@
 package ru.emkn.kotlin.sms
 
 import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+import java.util.*
 
 typealias IAE = IllegalArgumentException // Used too often so needs to be typealiased
 
@@ -489,16 +490,21 @@ class AllCollectiveResults(results: List<CollectiveResult>) {
 }
 
 fun sortTableBy(table: List<List<String>>, column: Int, columnType: ColumnTypes): List<List<String>> {
-    return table
-    TODO()
+    return table.sortedWith() {
+        a, b -> when (columnType) {
+            ColumnTypes.INT -> a[column].toInt().compareTo(b[column].toInt())
+            ColumnTypes.STRING -> a[column].compareTo(b[column])
+            ColumnTypes.TIME -> Time(a[column]).compareTo(Time(b[column]))
+        }
+    }
 }
 
 fun sortTableByDescending(table: List<List<String>>, column: Int, columnType: ColumnTypes): List<List<String>> {
-    return table
-    TODO()
+    return sortTableBy(table, column, columnType).reversed()
 }
 
 fun filterTableBy(table: List<List<String>>, column: Int, equalTo: String): List<List<String>> {
-    return table
-    TODO()
+    return table.filter {
+        it[column] == equalTo
+    }
 }
