@@ -342,16 +342,23 @@ fun myApplication(width: Dp, height: Dp) {
     }
 }
 
-fun loadCSVToFile(s: String, exportFileName: String) {
+fun loadCSVToFile(s: String, exportFileName: String): Report {
+    var answer = Report(States.OK)
     csvWriter (). open(exportFileName) {
-        val allString = s.split('\n').groupBy {it[0]}
+        val allString = s.split('\n').groupBy {it.split(',')[0]}
         for ((name, key) in allString) {
             writeRow(name)
             for (elem in key) {
-                writeRow(elem.subSequence(1 until elem.length).toList().joinToString(separator = ","))
+                val position = elem.first {it == ','}
+                if (position == null) {
+                    answer = Report(States.WRONG, "$elem not have ,")
+                } else {
+                    writeRow(elem.subSequence(position.toInt() + 1 until elem.length))
+                }
             }
         }
     }
+    return answer
 }
 
 fun loadFromCSVFile(tab: MutableState<TabTypes>, importFileName: String): String {
