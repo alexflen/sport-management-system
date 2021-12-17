@@ -303,6 +303,10 @@ fun loadFromCSVFile(tab: MutableState<TabTypes>, importFileName: String): String
     return result.toString()
 }
 
+fun transformation(a: List<EnrollSportsman>): List<StartSportsman> {
+    return AllStartGroups(a).groups.flatMap {it.participants}
+}
+
 fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "Sport Management System",
         state = rememberWindowState(width = 800.dp, height = 720.dp)
