@@ -192,6 +192,16 @@ class TabInfo<T>(
         dialogReport.value = report
         openDialog.value = true
     }
+
+    fun getEverythingFromUpdatedLines() {
+        plainCSV.value = csvLines.value.map { it.toString() }.joinToString("\n")
+        val report = checkIfOkCSV(csvLines.value.map { it.toString().split(",") })
+        if (report.state == States.WRONG) {
+            invokeDialog(Report(States.WRONG, "BUG: Wrong transformation"))
+        }
+        state.value = report.state
+        warning.value = report.message
+    }
 }
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -298,6 +308,7 @@ fun myApplication(width: Dp, height: Dp) {
                                     tabInfos[currentTab.value]!!.importFileName.value
                                 )
                             )
+                            tabInfos[currentTab.value]!!.overrideClassValues()
                         }) { Icon(Icons.Rounded.Add, "Import") }
                     }
                     OutlinedTextField(value = currentTab.value.header.joinToString(","),
@@ -334,8 +345,21 @@ fun myApplication(width: Dp, height: Dp) {
 
                 Column(verticalArrangement = Arrangement.Center) {
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
-                        tabInfos[currentTab.value]!!.overrideClassValues()
+                        val report = tabInfos[currentTab.value]!!.overrideClassValues()
+                        if (report.state == States.OK) {
+                            when (currentTab.value) {
+                                TabTypes.TEAMS ->
+                                {
+                                    TODO()
+                                    tabInfos[TabTypes.GROUPS]!!.updateWhenCSV(
+                                        transformationToStartSportsman(
+                                            tabInfos[TabTypes.TEAMS]!!.csvLines.value
+                                                    as List<EnrollSportsman>).joinToString("\n") { it.toString() })
+                                }
+                            }
+                        }
                     }) { Text("Check & Generate") }
+
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         tabInfos[currentTab.value]!!.expandSortChoice.value = true
                     }) { Icon(Icons.Rounded.KeyboardArrowDown, "Sort") }
@@ -438,11 +462,11 @@ fun loadFromCSVFile(tab: MutableState<TabTypes>, importFileName: String): String
             if (row[1].isEmpty()) {
                 currentName = row.first()
             } else {
-                result.appendLine(currentName + row.joinToString(prefix = ",", separator = ","))
+                result.appendLine((currentName + row.joinToString(prefix = ",", separator = ",")).trim())
             }
         }
     }
-    return result.toString()
+    return result.toString().trim()
 }
 
 fun transformationToStartSportsman(a: List<EnrollSportsman>): List<StartSportsman> {
