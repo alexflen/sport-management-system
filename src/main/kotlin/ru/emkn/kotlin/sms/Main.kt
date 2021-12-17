@@ -54,6 +54,8 @@ class TabInfo<T>(
                 initLines: MutableState<List<T>>,
                 csvLines: MutableState<List<T>>,
               whichFilter: MutableState<String>,
+                openDialog: MutableState<Boolean>,
+                dialogMessage: MutableState<String>,
               classConstructor: (List<String>) -> T) {
     var initCSV: MutableState<String>
     var plainCSV: MutableState<String>
@@ -68,6 +70,8 @@ class TabInfo<T>(
     var csvLines: MutableState<List<T>>
     val whichFilter: MutableState<String>
     val classConstructor: (List<String>) -> T
+    var openDialog: MutableState<Boolean>
+    var dialogMessage: MutableState<String>
     init {
         this.initCSV = initCSV
         this.plainCSV = plainCSV
@@ -82,6 +86,8 @@ class TabInfo<T>(
         this.initLines = initLines
         this.classConstructor = classConstructor
         this.whichFilter = whichFilter
+        this.openDialog = openDialog
+        this.dialogMessage = dialogMessage
     }
 
     private fun checkIfOkCSV(rows: List<List<String>>): Report {
@@ -109,10 +115,13 @@ class TabInfo<T>(
     }
 
     fun overrideClassValues(): Report {
-        require(state.value == States.OK)
+        innerRequire(state.value == States.OK, "Fix the mistakes in CSV first")
         val table = plainCSV.value.split("\n").map { it.split(',') }
         try { csvLines.value = table.map { classConstructor(it) } }
-        catch (e : Exception) { return Report(States.WRONG, "Wrong format; can't process") }
+        catch (e : Exception) {
+            invokeDialog("Wrong format, can't process")
+            return Report(States.WRONG, "Wrong format, can't process")
+        }
 
         return Report(States.OK)
     }
@@ -134,76 +143,122 @@ class TabInfo<T>(
         return result
     }
 
+    private fun innerRequire(result: Boolean, message: String) {
+        if (!result)
+            invokeDialog(message)
+    }
+
     fun sortByField(index: Int) {
-        require(state.value == States.OK)
         val table = getTextLines()
         if (table.isNotEmpty())
-            require(index >= 0 && index < table[0].size)
+            innerRequire(index >= 0 && index < table[0].size, "BUG: Index of a field out of range")
         val columnType = getColumnType(table, index)
         plainCSV.value = sortTableBy(table, index, columnType).joinToString("\n") { it.joinToString(",") }
     }
 
     fun sortDescByField(index: Int) {
-        require(state.value == States.OK)
         val table = getTextLines()
         if (table.isNotEmpty())
-            require(index >= 0 && index < table[0].size)
+            innerRequire(index >= 0 && index < table[0].size, "BUG: Index of a field out of range")
         val columnType = getColumnType(table, index)
         plainCSV.value = sortTableByDescending(table, index, columnType).joinToString("\n") { it.joinToString(",") }
     }
 
     fun filterByField(index: Int) {
-        require(state.value == States.OK)
         val table = getTextLines()
         if (table.isNotEmpty())
-            require(index >= 0 && index < table[0].size)
+            innerRequire(index >= 0 && index < table[0].size, "BUG: Index of a field out of range")
         plainCSV.value = filterTableBy(table, index, whichFilter.value).joinToString("\n") { it.joinToString(",") }
     }
 
     fun turnBackToWorking() {
         plainCSV.value = csvLines.value.joinToString("\n") { it.toString() }
     }
+
+    fun invokeDialog(report: Report) {
+        dialogMessage.value = report.message
+        openDialog.value = true
+    }
+
+    fun invokeDialog(message: String) {
+        dialogMessage.value = message
+        openDialog.value = true
+    }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 @Preview
 fun myApplication(width: Dp, height: Dp) {
+    val textWidth = width.div(1.4F)
+    val butWidth = width - textWidth - 100.dp
     MaterialTheme {
         val currentTab = remember { mutableStateOf(TabTypes.TEAMS) }
         val tabInfos = mapOf( TabTypes.TEAMS to TabInfo<EnrollSportsman>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(false) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { EnrollSportsman(it) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { EnrollSportsman(it) },
             TabTypes.GROUPS to TabInfo<StartSportsman>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
                 remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) },  remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { it -> StartSportsman(it) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { it -> StartSportsman(it) },
             TabTypes.DIST to TabInfo<Station>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
                 remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { Station(it) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { Station(it) },
             TabTypes.MARKS to TabInfo<StationPerformance>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
                 remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { StationPerformance(it) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { StationPerformance(it) },
             TabTypes.RESULTS to TabInfo<ResultSportsman>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
                 remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { ResultSportsman(it) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { ResultSportsman(it) },
             )
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+        if (tabInfos[currentTab.value]!!.openDialog.value) {
+            AlertDialog(
+                onDismissRequest = {
+                    // Dismiss the dialog when the user clicks outside the dialog or on the back
+                    // button. If you want to disable that functionality, simply use an empty
+                    // onCloseRequest.
+                },
+                title = {
+                    Text(text = "Message")
+                },
+                text = {
+                    Text(tabInfos[currentTab.value]!!.dialogMessage.value)
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            tabInfos[currentTab.value]!!.openDialog.value = false
+                        }) {
+                        Text("OK")
+                    }
+                }
+            )
+        }
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()) {
                 TabTypes.values().forEach { iterated ->
                     Button(modifier = Modifier.align(Alignment.CenterVertically), onClick = {
                         currentTab.value = iterated
@@ -218,9 +273,9 @@ fun myApplication(width: Dp, height: Dp) {
                 Column(verticalArrangement = Arrangement.Top) {
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.width(500.dp)
+                        modifier = Modifier.width(textWidth)
                     ) {
-                        TextField(
+                        OutlinedTextField(
                             value = tabInfos[currentTab.value]!!.importFileName.value,
                             onValueChange = { tabInfos[currentTab.value]!!.importFileName.value = it },
                             label = { Text("Import from file") },
@@ -235,19 +290,23 @@ fun myApplication(width: Dp, height: Dp) {
                             )
                         }) { Icon(Icons.Rounded.Add, "Import") }
                     }
-
-                    TextField(value = tabInfos[currentTab.value]!!.plainCSV.value,
+                    OutlinedTextField(value = currentTab.value.header.joinToString(","),
+                        onValueChange = {  },
+                        modifier = Modifier
+                            .width(textWidth),
+                        label = { Text("${currentTab.value.title} header") })
+                    OutlinedTextField(value = tabInfos[currentTab.value]!!.plainCSV.value,
                         onValueChange = { tabInfos[currentTab.value]!!.updateWhenCSV(it) },
                         modifier = Modifier
                             .height(400.dp)
-                            .width(500.dp),
+                            .width(textWidth),
                         label = { Text("${currentTab.value.title} csv info") })
 
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.width(500.dp)
+                        modifier = Modifier.width(textWidth)
                     ) {
-                        TextField(
+                        OutlinedTextField(
                             value = tabInfos[currentTab.value]!!.exportFileName.value,
                             onValueChange = { tabInfos[currentTab.value]!!.exportFileName.value = it },
                             label = { Text("Export to file") },
@@ -260,21 +319,21 @@ fun myApplication(width: Dp, height: Dp) {
                     }
 
                     Text(tabInfos[currentTab.value]!!.warning.value, color = Color.Red, fontSize = 18.sp,
-                        modifier = Modifier.width(500.dp))
+                        modifier = Modifier.width(textWidth).padding(5.dp))
                 }
 
                 Column(verticalArrangement = Arrangement.Center) {
-                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         tabInfos[currentTab.value]!!.overrideClassValues()
                     }) { Text("Check & Generate") }
-                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         tabInfos[currentTab.value]!!.expandSortChoice.value = true
                     }) { Icon(Icons.Rounded.KeyboardArrowDown, "Sort") }
                     DropdownMenu(
                         expanded = tabInfos[currentTab.value]!!.expandSortChoice.value,
                         onDismissRequest = { tabInfos[currentTab.value]!!.expandSortChoice.value = false },
                         modifier = Modifier
-                            .width(200.dp)
+                            .width(butWidth)
                             //.background(MaterialTheme.colors.surface)
                     ) {
                        currentTab.value.header.forEachIndexed { index, title ->
@@ -287,14 +346,14 @@ fun myApplication(width: Dp, height: Dp) {
                         }
                     }
 
-                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         tabInfos[currentTab.value]!!.expandSortDescChoice.value = true
                     }) { Icon(Icons.Rounded.KeyboardArrowUp, "SortDesc") }
                     DropdownMenu(
                         expanded = tabInfos[currentTab.value]!!.expandSortDescChoice.value,
                         onDismissRequest = { tabInfos[currentTab.value]!!.expandSortDescChoice.value = false },
                         modifier = Modifier
-                            .width(200.dp)
+                            .width(butWidth)
                         //.background(MaterialTheme.colors.surface)
                     ) {
                         currentTab.value.header.forEachIndexed { index, title ->
@@ -306,14 +365,14 @@ fun myApplication(width: Dp, height: Dp) {
                             }
                         }
                     }
-                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         tabInfos[currentTab.value]!!.expandFilterChoice.value = true
                     }) { Icon(Icons.Rounded.Search, "FilterBy") }
                     DropdownMenu(
                         expanded = tabInfos[currentTab.value]!!.expandFilterChoice.value,
                         onDismissRequest = { tabInfos[currentTab.value]!!.expandFilterChoice.value = false },
                         modifier = Modifier
-                            .width(200.dp)
+                            .width(butWidth)
                         //.background(MaterialTheme.colors.surface)
                     ) {
                         currentTab.value.header.forEachIndexed { index, title ->
@@ -325,15 +384,15 @@ fun myApplication(width: Dp, height: Dp) {
                             }
                         }
                     }
-                    TextField(
+                    OutlinedTextField(
                         value = tabInfos[currentTab.value]!!.whichFilter.value,
                         onValueChange = { tabInfos[currentTab.value]!!.whichFilter.value = it },
                         label = { Text("Filter") },
                         textStyle = TextStyle(color = Color.Blue),
-                        modifier = Modifier.width(200.dp)
+                        modifier = Modifier.width(butWidth)
                     )
 
-                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         tabInfos[currentTab.value]!!.turnBackToWorking()
                     }) { Icon(Icons.Rounded.Clear, "ReturnToWorking") }
                 }
@@ -381,19 +440,13 @@ fun transformationToStartSportsman(a: List<EnrollSportsman>): List<StartSportsma
 }
 
 fun checkEquals(a: List<StartSportsman>, b: List<EnrollSportsman>): Report {
-    val allA = mutableSetOf<String>()
-    val allB = mutableSetOf<String>()
-    a.forEach {
-        allA.add(it.mainInformation())
-    }
-    b.forEach {
-        allB.add(it.mainInformation())
-    }
+    val allA = a.map { it.mainInformation() }.toSet()
+    val allB = b.map { it.mainInformation() }.toSet()
     if (allA.size != a.size || allB.size != b.size) {
-        return Report(States.WRONG, "There is an athlete announced several times")
+        return Report(States.WRONG, "A sportsman is announced several times")
     }
     else if (allA != allB) {
-        return Report(States.WRONG, "Athlete lists do not match")
+        return Report(States.WRONG, "Sportsmen lists do not match")
     }
     else {
         return Report(States.OK)
@@ -402,8 +455,8 @@ fun checkEquals(a: List<StartSportsman>, b: List<EnrollSportsman>): Report {
 
 fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "Sport Management System",
-        state = rememberWindowState(width = 800.dp, height = 720.dp)
+        state = rememberWindowState(width = 1000.dp, height = 750.dp)
     ) {
-        myApplication(800.dp, 720.dp)
+        myApplication(1000.dp, 750.dp)
     }
 }
