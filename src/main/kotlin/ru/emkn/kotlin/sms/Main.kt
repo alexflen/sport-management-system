@@ -10,14 +10,13 @@ import androidx.compose.material.*
 
 // Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.DateRange
-import androidx.compose.material.icons.rounded.ExitToApp
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,10 +49,13 @@ class TabInfo<T>(initCSV: MutableState<String>,
               exportFileName: MutableState<String>,
               warning: MutableState<String>,
               expandSortChoice: MutableState<Boolean>,
+                 expandSortDescChoice: MutableState<Boolean>,
+                 expandFilterChoice: MutableState<Boolean>,
               state: MutableState<States>,
               initLines: MutableState<List<T>>,
               csvLines: MutableState<List<T>>,
-              constructor: (List<String>) -> T) {
+                 whichFilter: MutableState<String>,
+              classConstructor: (List<String>) -> T) {
     //var state = States.EMPTY
     //var queryLines = listOf<String>()
     //var csvLines = listOf<List<String>>()
@@ -63,21 +65,27 @@ class TabInfo<T>(initCSV: MutableState<String>,
     var exportFileName: MutableState<String>
     var warning: MutableState<String>
     var expandSortChoice: MutableState<Boolean>
+    var expandSortDescChoice: MutableState<Boolean>
+    var expandFilterChoice: MutableState<Boolean>
     var state: MutableState<States>
     var initLines: MutableState<List<T>>
     var csvLines: MutableState<List<T>>
-    val constructor: (List<String>) -> T
+    val whichFilter: MutableState<String>
+    val classConstructor: (List<String>) -> T
     init {
         this.initCSV = initCSV
         this.plainCSV = plainCSV
         this.csvLines = csvLines
         this.expandSortChoice = expandSortChoice
+        this.expandSortDescChoice = expandSortDescChoice
+        this.expandFilterChoice = expandFilterChoice
         this.exportFileName = exportFileName
         this.importFileName = importFileName
         this.state = state
         this.warning = warning
         this.initLines = initLines
-        this.constructor = constructor
+        this.classConstructor = classConstructor
+        this.whichFilter = whichFilter
     }
 
     fun checkIfOkCSV(rows: List<List<String>>): Report {
@@ -107,16 +115,14 @@ class TabInfo<T>(initCSV: MutableState<String>,
     fun overrideClassValues(): Report {
         require(state.value == States.OK)
         val table = plainCSV.value.split("\n").map { it.split(',') }
-        try { csvLines.value = table.map { constructor(it) } }
+        try { csvLines.value = table.map { classConstructor(it) } }
         catch (e : Exception) { return Report(States.WRONG, "Wrong format; can't process") }
 
         return Report(States.OK)
     }
 
-    private fun getTextLinesFromT(): List<List<String>> {
-        return csvLines.value.map {
-            it.toString().split(",")
-        }
+    private fun getTextLines(): List<List<String>> {
+        return plainCSV.value.split("\n").map { it.split(",") }
     }
 
     private fun getColumnType(table: List<List<String>>, column: Int): ColumnTypes {
@@ -134,11 +140,32 @@ class TabInfo<T>(initCSV: MutableState<String>,
 
     fun sortByField(index: Int) {
         require(state.value == States.OK)
-        val table = getTextLinesFromT()
+        val table = getTextLines()
         if (table.isNotEmpty())
             require(index >= 0 && index < table[0].size)
         val columnType = getColumnType(table, index)
         plainCSV.value = sortTableBy(table, index, columnType).joinToString("\n") { it.joinToString(",") }
+    }
+
+    fun sortDescByField(index: Int) {
+        require(state.value == States.OK)
+        val table = getTextLines()
+        if (table.isNotEmpty())
+            require(index >= 0 && index < table[0].size)
+        val columnType = getColumnType(table, index)
+        plainCSV.value = sortTableByDescending(table, index, columnType).joinToString("\n") { it.joinToString(",") }
+    }
+
+    fun filterByField(index: Int) {
+        require(state.value == States.OK)
+        val table = getTextLines()
+        if (table.isNotEmpty())
+            require(index >= 0 && index < table[0].size)
+        plainCSV.value = filterTableBy(table, index, whichFilter.value).joinToString("\n") { it.joinToString(",") }
+    }
+
+    fun turnBackToWorking() {
+        plainCSV.value = csvLines.value.joinToString("\n") { it.toString() }
     }
 }
 
@@ -147,37 +174,36 @@ class TabInfo<T>(initCSV: MutableState<String>,
 fun myApplication(width: Dp, height: Dp) {
     MaterialTheme {
         val currentTab = remember { mutableStateOf(TabTypes.TEAMS) }
-        val lstStr = listOf("a", "b")
         val tabInfos = mapOf( TabTypes.TEAMS to TabInfo<EnrollSportsman>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }) { EnrollSportsman(lstStr) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { EnrollSportsman(it) },
             TabTypes.GROUPS to TabInfo<StartSportsman>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) },  remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }) { StartSportsman(lstStr) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { it -> StartSportsman(it) },
             TabTypes.DIST to TabInfo<Station>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }) { Station(lstStr) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { Station(it) },
             TabTypes.MARKS to TabInfo<StationPerformance>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }) { StationPerformance(lstStr) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { StationPerformance(it) },
             TabTypes.RESULTS to TabInfo<ResultSportsman>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
-                remember { mutableStateOf(listOf()) }) { ResultSportsman(lstStr) },
+                remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") }) { ResultSportsman(it) },
             )
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -224,12 +250,12 @@ fun myApplication(width: Dp, height: Dp) {
                 }
 
                 Column(verticalArrangement = Arrangement.Center) {
-                    Button(modifier = Modifier.align(Alignment.CenterHorizontally), onClick = {
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
                         tabInfos[currentTab.value]!!.overrideClassValues()
                     }) { Text("Check & Generate") }
-                    Button(modifier = Modifier.align(Alignment.CenterHorizontally), onClick = {
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
                         tabInfos[currentTab.value]!!.expandSortChoice.value = true
-                    }) { Icon(Icons.Rounded.KeyboardArrowUp, "Sort") }
+                    }) { Icon(Icons.Rounded.KeyboardArrowDown, "Sort") }
                     DropdownMenu(
                         expanded = tabInfos[currentTab.value]!!.expandSortChoice.value,
                         onDismissRequest = { tabInfos[currentTab.value]!!.expandSortChoice.value = false },
@@ -246,6 +272,56 @@ fun myApplication(width: Dp, height: Dp) {
                             }
                         }
                     }
+
+                Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                    tabInfos[currentTab.value]!!.expandSortDescChoice.value = true
+                }) { Icon(Icons.Rounded.KeyboardArrowUp, "SortDesc") }
+                DropdownMenu(
+                    expanded = tabInfos[currentTab.value]!!.expandSortDescChoice.value,
+                    onDismissRequest = { tabInfos[currentTab.value]!!.expandSortDescChoice.value = false },
+                    modifier = Modifier
+                        .width(200.dp)
+                    //.background(MaterialTheme.colors.surface)
+                ) {
+                    currentTab.value.header.forEachIndexed { index, title ->
+                        DropdownMenuItem(
+                            onClick = {
+                                tabInfos[currentTab.value]!!.sortDescByField(index)
+                            }) {
+                            Text(text = title)
+                        }
+                    }
+                }
+                Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                    tabInfos[currentTab.value]!!.expandFilterChoice.value = true
+                }) { Icon(Icons.Rounded.Search, "FilterBy") }
+                DropdownMenu(
+                    expanded = tabInfos[currentTab.value]!!.expandFilterChoice.value,
+                    onDismissRequest = { tabInfos[currentTab.value]!!.expandFilterChoice.value = false },
+                    modifier = Modifier
+                        .width(200.dp)
+                    //.background(MaterialTheme.colors.surface)
+                ) {
+                    currentTab.value.header.forEachIndexed { index, title ->
+                        DropdownMenuItem(
+                            onClick = {
+                                tabInfos[currentTab.value]!!.filterByField(index)
+                            }) {
+                            Text(text = title)
+                        }
+                    }
+                }
+                TextField(
+                    value = tabInfos[currentTab.value]!!.whichFilter.value,
+                    onValueChange = { tabInfos[currentTab.value]!!.whichFilter.value = it },
+                    label = { Text("Filter") },
+                    textStyle = TextStyle(color = Color.Blue),
+                    modifier = Modifier.width(200.dp)
+                )
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                        tabInfos[currentTab.value]!!.turnBackToWorking()
+                    }) { Icon(Icons.Rounded.Clear, "ReturnToWorking") }
+
                 }
 
                 /*Column(verticalArrangement = Arrangement.Top) {
