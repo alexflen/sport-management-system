@@ -3,8 +3,6 @@ package ru.emkn.kotlin.sms
 import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 import java.util.*
 
-typealias IAE = IllegalArgumentException // Used too often so needs to be typealiased
-
 /*
  * Just a basic Sportsman class for every other Sportsman to inherit the fields
  */
@@ -234,7 +232,7 @@ class StationSportsman(number: Int, stations: List<StationPerformance>) {
 
         for (i in 1 until this.stations.size) {
             if (this.stations[i - 1].time >= this.stations[i].time) {
-                throw IAE("Incorrect time for the passage of the station by the athlete with the number ${this.number}")
+                throw IllegalArgumentException("Incorrect time for the passage of the station by the athlete with the number ${this.number}")
             }
         }
     }
@@ -316,7 +314,7 @@ class Group<T: Sportsman>(name: String, participants: List<T>) {
             if (it is StartSportsman) {
                 result.appendLine(it.toString())
             } else {
-                throw IAE("Wrong Sportsman; expected StartSportsman")
+                throw IllegalArgumentException("Wrong Sportsman; expected StartSportsman")
             }
         }
         return result.toString()
@@ -328,7 +326,7 @@ class Group<T: Sportsman>(name: String, participants: List<T>) {
             if (it is ResultSportsman) {
                 result.appendLine(it)
             } else {
-                throw IAE("Wrong Sportsman; expected ResultSportsman")
+                throw IllegalArgumentException("Wrong Sportsman; expected ResultSportsman")
             }
         }
         return result.toString()
@@ -442,6 +440,11 @@ class AllResultGroups(givenGroups: List<Group<ResultSportsman>>) {
             return result
         }
     }
+}
+
+fun <T: Sportsman, R: Sportsman> areEqual(oneSportsman: T, otherSportsman: R): Boolean {
+    return oneSportsman.name == otherSportsman.name && oneSportsman.surname == otherSportsman.surname &&
+            oneSportsman.birthYear == otherSportsman.birthYear && oneSportsman.collective == otherSportsman.collective
 }
 
 /*
