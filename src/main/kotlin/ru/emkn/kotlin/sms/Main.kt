@@ -49,8 +49,8 @@ class TabInfo<T>(initCSV: MutableState<String>,
               expandSortChoice: MutableState<Boolean>,
               state: MutableState<States>,
               initLines: MutableState<List<T>>,
-              csvLines: MutableState<List<T>>
-              ) {
+              csvLines: MutableState<List<T>>,
+              constructor: (List<String>) -> T) {
     //var state = States.EMPTY
     //var queryLines = listOf<String>()
     //var csvLines = listOf<List<String>>()
@@ -63,6 +63,7 @@ class TabInfo<T>(initCSV: MutableState<String>,
     var state: MutableState<States>
     var initLines: MutableState<List<T>>
     var csvLines: MutableState<List<T>>
+    val constructor: (List<String>) -> T
     init {
         this.initCSV = initCSV
         this.plainCSV = plainCSV
@@ -73,6 +74,7 @@ class TabInfo<T>(initCSV: MutableState<String>,
         this.state = state
         this.warning = warning
         this.initLines = initLines
+        this.constructor = constructor
     }
 
     fun checkIfOkCSV(rows: List<List<String>>): Report {
@@ -102,7 +104,10 @@ class TabInfo<T>(initCSV: MutableState<String>,
     fun overrideClassValues(): Report {
         require(state.value == States.OK)
         val table = plainCSV.value.split("\n").map { it.split(',') }
-        csvLines.value = TODO()
+        try { csvLines.value = table.map { constructor(it) } }
+        catch (e : Exception) { return Report(States.WRONG, "Wrong format; can't process") }
+
+        return Report(States.OK)
     }
 
     private fun getTextLinesFromT(): List<List<String>> {
@@ -138,12 +143,39 @@ class TabInfo<T>(initCSV: MutableState<String>,
 @Preview
 fun myApplication(width: Dp, height: Dp) {
     MaterialTheme {
-        val currentTab = remember { mutableStateOf(TabTypes.GROUPS) }
-        val tabInfos = TabTypes.values().associateWith { TabInfo(remember { mutableStateOf("") },
-            remember { mutableStateOf("") }, remember { mutableStateOf("") },
-        remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
-        remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
-        remember { mutableStateOf(listOf()) }, remember { mutableStateOf(listOf()) }) }
+        val currentTab = remember { mutableStateOf(TabTypes.TEAMS) }
+        val lstStr = listOf("a", "b")
+        val tabInfos = mapOf( TabTypes.TEAMS to TabInfo<EnrollSportsman>(remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(listOf()) },
+                remember { mutableStateOf(listOf()) }) { EnrollSportsman(lstStr) },
+            TabTypes.GROUPS to TabInfo<StartSportsman>(remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(listOf()) },
+                remember { mutableStateOf(listOf()) }) { StartSportsman(lstStr) },
+            TabTypes.DIST to TabInfo<Station>(remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(listOf()) },
+                remember { mutableStateOf(listOf()) }) { Station(lstStr) },
+            TabTypes.MARKS to TabInfo<StationPerformance>(remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(listOf()) },
+                remember { mutableStateOf(listOf()) }) { StationPerformance(lstStr) },
+            TabTypes.RESULTS to TabInfo<ResultSportsman>(remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("") },
+                remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
+                remember { mutableStateOf(listOf()) },
+                remember { mutableStateOf(listOf()) }) { ResultSportsman(lstStr) },
+            )
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
