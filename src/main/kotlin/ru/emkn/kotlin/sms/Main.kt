@@ -1,6 +1,7 @@
 package ru.emkn.kotlin.sms
 
 import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import java.util.*
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -351,8 +352,16 @@ fun myApplication(width: Dp, height: Dp) {
     }
 }
 
-fun loadCSVToFile(tab: MutableState<TabTypes>, exportFileName: Any) {
-
+fun loadCSVToFile(s: String, exportFileName: String) {
+    csvWriter (). open(exportFileName) {
+        val allString = s.split('\n').groupBy {it[0]}
+        for ((name, key) in allString) {
+            writeRow(name)
+            for (elem in key) {
+                writeRow(elem.subSequence(1..elem.length - 1).toList().joinToString(separator = ","))
+            }
+        }
+    }
 }
 
 fun loadFromCSVFile(tab: MutableState<TabTypes>, importFileName: String): String {
@@ -368,6 +377,10 @@ fun loadFromCSVFile(tab: MutableState<TabTypes>, importFileName: String): String
         }
     }
     return result.toString()
+}
+
+fun transformationToStartSportsman(a: List<EnrollSportsman>): List<StartSportsman> {
+    return AllStartGroups(a).groups.flatMap {it.participants}
 }
 
 fun main() = application {
