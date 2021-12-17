@@ -2,10 +2,8 @@ package ru.emkn.kotlin.sms
 
 import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
-import java.util.*
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 
@@ -17,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,22 +41,20 @@ enum class States {
 
 data class Report(val state: States, val message: String = "")
 
-class TabInfo<T>(initCSV: MutableState<String>,
+class TabInfo<T>(
+              initCSV: MutableState<String>,
               plainCSV: MutableState<String>,
-              importFileName: MutableState<String>,
-              exportFileName: MutableState<String>,
+                importFileName: MutableState<String>,
+                exportFileName: MutableState<String>,
               warning: MutableState<String>,
-              expandSortChoice: MutableState<Boolean>,
-                 expandSortDescChoice: MutableState<Boolean>,
-                 expandFilterChoice: MutableState<Boolean>,
+                expandSortChoice: MutableState<Boolean>,
+                expandSortDescChoice: MutableState<Boolean>,
+                expandFilterChoice: MutableState<Boolean>,
               state: MutableState<States>,
-              initLines: MutableState<List<T>>,
-              csvLines: MutableState<List<T>>,
-                 whichFilter: MutableState<String>,
+                initLines: MutableState<List<T>>,
+                csvLines: MutableState<List<T>>,
+              whichFilter: MutableState<String>,
               classConstructor: (List<String>) -> T) {
-    //var state = States.EMPTY
-    //var queryLines = listOf<String>()
-    //var csvLines = listOf<List<String>>()
     var initCSV: MutableState<String>
     var plainCSV: MutableState<String>
     var importFileName: MutableState<String>
@@ -89,7 +84,7 @@ class TabInfo<T>(initCSV: MutableState<String>,
         this.whichFilter = whichFilter
     }
 
-    fun checkIfOkCSV(rows: List<List<String>>): Report {
+    private fun checkIfOkCSV(rows: List<List<String>>): Report {
         // Check if all have the same number of columns
         if (rows.isEmpty()) return Report(States.EMPTY, "Warning: empty CSV")
         val headerSize = rows[0].size
@@ -216,6 +211,7 @@ fun myApplication(width: Dp, height: Dp) {
                     else ButtonDefaults.buttonColors(Color.Unspecified)) { Text(iterated.title) }
                 }
             }
+
             Text(currentTab.value.title, color = Color.Blue, fontSize = 25.sp)
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.SpaceAround,
                 modifier = Modifier.fillMaxWidth()) {
@@ -243,11 +239,28 @@ fun myApplication(width: Dp, height: Dp) {
                     TextField(value = tabInfos[currentTab.value]!!.plainCSV.value,
                         onValueChange = { tabInfos[currentTab.value]!!.updateWhenCSV(it) },
                         modifier = Modifier
-                            .height(500.dp)
+                            .height(400.dp)
                             .width(500.dp),
                         label = { Text("${currentTab.value.title} csv info") })
-                    Text(tabInfos[currentTab.value]!!.warning.value, color = Color.Red, fontSize = 15.sp,
-                    modifier = Modifier.width(500.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.width(500.dp)
+                    ) {
+                        TextField(
+                            value = tabInfos[currentTab.value]!!.exportFileName.value,
+                            onValueChange = { tabInfos[currentTab.value]!!.exportFileName.value = it },
+                            label = { Text("Export to file") },
+                            modifier = Modifier.width(400.dp)
+                        )
+                        Button(modifier = Modifier.align(Alignment.CenterVertically), onClick = {
+                            loadCSVToFile(tabInfos[currentTab.value]!!.plainCSV.value,
+                                tabInfos[currentTab.value]!!.exportFileName.value)
+                        }) { Icon(Icons.Rounded.ExitToApp, "Import") }
+                    }
+
+                    Text(tabInfos[currentTab.value]!!.warning.value, color = Color.Red, fontSize = 18.sp,
+                        modifier = Modifier.width(500.dp))
                 }
 
                 Column(verticalArrangement = Arrangement.Center) {
@@ -274,79 +287,56 @@ fun myApplication(width: Dp, height: Dp) {
                         }
                     }
 
-                Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
-                    tabInfos[currentTab.value]!!.expandSortDescChoice.value = true
-                }) { Icon(Icons.Rounded.KeyboardArrowUp, "SortDesc") }
-                DropdownMenu(
-                    expanded = tabInfos[currentTab.value]!!.expandSortDescChoice.value,
-                    onDismissRequest = { tabInfos[currentTab.value]!!.expandSortDescChoice.value = false },
-                    modifier = Modifier
-                        .width(200.dp)
-                    //.background(MaterialTheme.colors.surface)
-                ) {
-                    currentTab.value.header.forEachIndexed { index, title ->
-                        DropdownMenuItem(
-                            onClick = {
-                                tabInfos[currentTab.value]!!.sortDescByField(index)
-                            }) {
-                            Text(text = title)
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                        tabInfos[currentTab.value]!!.expandSortDescChoice.value = true
+                    }) { Icon(Icons.Rounded.KeyboardArrowUp, "SortDesc") }
+                    DropdownMenu(
+                        expanded = tabInfos[currentTab.value]!!.expandSortDescChoice.value,
+                        onDismissRequest = { tabInfos[currentTab.value]!!.expandSortDescChoice.value = false },
+                        modifier = Modifier
+                            .width(200.dp)
+                        //.background(MaterialTheme.colors.surface)
+                    ) {
+                        currentTab.value.header.forEachIndexed { index, title ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    tabInfos[currentTab.value]!!.sortDescByField(index)
+                                }) {
+                                Text(text = title)
+                            }
                         }
                     }
-                }
-                Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
-                    tabInfos[currentTab.value]!!.expandFilterChoice.value = true
-                }) { Icon(Icons.Rounded.Search, "FilterBy") }
-                DropdownMenu(
-                    expanded = tabInfos[currentTab.value]!!.expandFilterChoice.value,
-                    onDismissRequest = { tabInfos[currentTab.value]!!.expandFilterChoice.value = false },
-                    modifier = Modifier
-                        .width(200.dp)
-                    //.background(MaterialTheme.colors.surface)
-                ) {
-                    currentTab.value.header.forEachIndexed { index, title ->
-                        DropdownMenuItem(
-                            onClick = {
-                                tabInfos[currentTab.value]!!.filterByField(index)
-                            }) {
-                            Text(text = title)
+                    Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
+                        tabInfos[currentTab.value]!!.expandFilterChoice.value = true
+                    }) { Icon(Icons.Rounded.Search, "FilterBy") }
+                    DropdownMenu(
+                        expanded = tabInfos[currentTab.value]!!.expandFilterChoice.value,
+                        onDismissRequest = { tabInfos[currentTab.value]!!.expandFilterChoice.value = false },
+                        modifier = Modifier
+                            .width(200.dp)
+                        //.background(MaterialTheme.colors.surface)
+                    ) {
+                        currentTab.value.header.forEachIndexed { index, title ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    tabInfos[currentTab.value]!!.filterByField(index)
+                                }) {
+                                Text(text = title)
+                            }
                         }
                     }
-                }
-                TextField(
-                    value = tabInfos[currentTab.value]!!.whichFilter.value,
-                    onValueChange = { tabInfos[currentTab.value]!!.whichFilter.value = it },
-                    label = { Text("Filter") },
-                    textStyle = TextStyle(color = Color.Blue),
-                    modifier = Modifier.width(200.dp)
-                )
+                    TextField(
+                        value = tabInfos[currentTab.value]!!.whichFilter.value,
+                        onValueChange = { tabInfos[currentTab.value]!!.whichFilter.value = it },
+                        label = { Text("Filter") },
+                        textStyle = TextStyle(color = Color.Blue),
+                        modifier = Modifier.width(200.dp)
+                    )
+
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(200.dp), onClick = {
                         tabInfos[currentTab.value]!!.turnBackToWorking()
                     }) { Icon(Icons.Rounded.Clear, "ReturnToWorking") }
-
                 }
-
-                /*Column(verticalArrangement = Arrangement.Top) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.width(300.dp)) {
-                        TextField(value = tabInfos[currentTab.value]!!.exportFileName.value,
-                            onValueChange = { tabInfos[currentTab.value]!!.exportFileName.value = it },
-                            label = { Text("Export to file") },
-                            modifier = Modifier.width(200.dp)
-                        )
-                        Button(modifier = Modifier.align(Alignment.CenterVertically), onClick = {
-                            loadCSVToFile(currentTab, tabInfos[currentTab.value]!!.exportFileName.value)
-                        }) { Icon(Icons.Rounded.ExitToApp, "Export") }
-                    }
-
-                    TextField(value = tabInfos[currentTab.value]!!.queryCSV.value,
-                        onValueChange = {  },
-                        modifier = Modifier
-                            .height(500.dp)
-                            .width(300.dp),
-                        label = { Text("${currentTab.value.title} query output") }
-                    )
-
-                }*/
             }
         }
     }
@@ -358,7 +348,7 @@ fun loadCSVToFile(s: String, exportFileName: String) {
         for ((name, key) in allString) {
             writeRow(name)
             for (elem in key) {
-                writeRow(elem.subSequence(1..elem.length - 1).toList().joinToString(separator = ","))
+                writeRow(elem.subSequence(1 until elem.length).toList().joinToString(separator = ","))
             }
         }
     }
@@ -390,24 +380,3 @@ fun main() = application {
         myApplication(800.dp, 720.dp)
     }
 }
-
-/*
-fun main(args: Array<String>) {
-    for (key in args) {
-        var it = 0
-        var name = ""
-        var cur:MutableList<StartEnrollSportsman> = mutableListOf()
-        csvReader (). open ( key ) {
-            readAllAsSequence (). forEach {row :  List < String > ->
-                it += 1
-                if (it == 1) {
-                    name = row[0]
-                } else {
-                    cur.add(StartEnrollSportsman(row[0], row[1], row[2].toInt(), row[3], row[4]))
-                }
-            }
-        }
-        Group(name, cur)
-    }
-}
-*/
