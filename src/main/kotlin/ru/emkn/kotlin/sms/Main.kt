@@ -55,7 +55,7 @@ class TabInfo<T>(
                 csvLines: MutableState<List<T>>,
               whichFilter: MutableState<String>,
                 openDialog: MutableState<Boolean>,
-                dialogMessage: MutableState<String>,
+                dialogReport: MutableState<Report>,
               classConstructor: (List<String>) -> T) {
     var initCSV: MutableState<String>
     var plainCSV: MutableState<String>
@@ -71,7 +71,7 @@ class TabInfo<T>(
     val whichFilter: MutableState<String>
     val classConstructor: (List<String>) -> T
     var openDialog: MutableState<Boolean>
-    var dialogMessage: MutableState<String>
+    var dialogReport: MutableState<Report>
     init {
         this.initCSV = initCSV
         this.plainCSV = plainCSV
@@ -87,7 +87,7 @@ class TabInfo<T>(
         this.classConstructor = classConstructor
         this.whichFilter = whichFilter
         this.openDialog = openDialog
-        this.dialogMessage = dialogMessage
+        this.dialogReport = dialogReport
     }
 
     private fun checkIfOkCSV(rows: List<List<String>>): Report {
@@ -106,6 +106,17 @@ class TabInfo<T>(
         return Report(States.OK)
     }
 
+    private fun checkIfOkClasses(rows: List<List<String>>): Report {
+        rows.forEachIndexed { index, it ->
+            try { classConstructor(it) }
+            catch (e : Exception) {
+                return Report(States.WRONG, "Wrong format in line $index, can't process")
+            }
+        }
+
+        return Report(States.OK)
+    }
+
     fun updateWhenCSV(text: String) {
         val table = text.split("\n").map { it.split(',') }
         plainCSV.value = text
@@ -117,12 +128,14 @@ class TabInfo<T>(
     fun overrideClassValues(): Report {
         innerRequire(state.value == States.OK, "Fix the mistakes in CSV first")
         val table = plainCSV.value.split("\n").map { it.split(',') }
-        try { csvLines.value = table.map { classConstructor(it) } }
-        catch (e : Exception) {
-            invokeDialog("Wrong format, can't process")
-            return Report(States.WRONG, "Wrong format, can't process")
+
+        val report = checkIfOkClasses(table)
+        if (report.state != States.OK) {
+            invokeDialog(report)
+            return report
         }
 
+        csvLines.value = table.map { classConstructor(it) } // No exceptions guaranteed
         return Report(States.OK)
     }
 
@@ -145,7 +158,7 @@ class TabInfo<T>(
 
     private fun innerRequire(result: Boolean, message: String) {
         if (!result)
-            invokeDialog(message)
+            invokeDialog(Report(States.WRONG, message))
     }
 
     fun sortByField(index: Int) {
@@ -176,12 +189,7 @@ class TabInfo<T>(
     }
 
     fun invokeDialog(report: Report) {
-        dialogMessage.value = report.message
-        openDialog.value = true
-    }
-
-    fun invokeDialog(message: String) {
-        dialogMessage.value = message
+        dialogReport.value = report
         openDialog.value = true
     }
 }
@@ -201,58 +209,60 @@ fun myApplication(width: Dp, height: Dp) {
                 remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
                 remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { EnrollSportsman(it) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(Report(States.OK)) }) { EnrollSportsman(it) },
             TabTypes.GROUPS to TabInfo<StartSportsman>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
                 remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) },  remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
                 remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { it -> StartSportsman(it) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(Report(States.OK)) }) { StartSportsman(it) },
             TabTypes.DIST to TabInfo<Station>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
                 remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
                 remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { Station(it) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(Report(States.OK)) }) { Station(it) },
             TabTypes.MARKS to TabInfo<StationPerformance>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
                 remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
                 remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { StationPerformance(it) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(Report(States.OK)) }) { StationPerformance(it) },
             TabTypes.RESULTS to TabInfo<ResultSportsman>(remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("") },
                 remember { mutableStateOf("") }, remember { mutableStateOf("Warning: empty CSV") },
                 remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, remember { mutableStateOf(States.EMPTY) },
                 remember { mutableStateOf(listOf()) },
                 remember { mutableStateOf(listOf()) }, remember { mutableStateOf("") },
-                remember { mutableStateOf(false) }, remember { mutableStateOf("") }) { ResultSportsman(it) },
+                remember { mutableStateOf(false) }, remember { mutableStateOf(Report(States.OK)) }) { ResultSportsman(it) },
             )
 
         if (tabInfos[currentTab.value]!!.openDialog.value) {
             AlertDialog(
                 onDismissRequest = {
-                    // Dismiss the dialog when the user clicks outside the dialog or on the back
-                    // button. If you want to disable that functionality, simply use an empty
-                    // onCloseRequest.
+                    if (tabInfos[currentTab.value]!!.dialogReport.value.state == States.OK)
+                         tabInfos[currentTab.value]!!.openDialog.value = false
                 },
                 title = {
-                    Text(text = "Message")
+                    if (tabInfos[currentTab.value]!!.dialogReport.value.state == States.OK)
+                        Text(text = "Message")
+                    else
+                        Text(text = "Error")
                 },
                 text = {
-                    Text(tabInfos[currentTab.value]!!.dialogMessage.value)
+                    if (tabInfos[currentTab.value]!!.dialogReport.value.state == States.OK)
+                        Text(tabInfos[currentTab.value]!!.dialogReport.value.message)
+                    else
+                        Text(text = tabInfos[currentTab.value]!!.dialogReport.value.message,
+                            color = Color.Red, fontSize = 18.sp)
                 },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            tabInfos[currentTab.value]!!.openDialog.value = false
-                        }) {
-                        Text("OK")
-                    }
-                }
+                confirmButton = { Button(onClick = { tabInfos[currentTab.value]!!.openDialog.value = false })
+                            { Text("OK") }
+                },
+                modifier = Modifier.width(width.div(3))
             )
         }
 
