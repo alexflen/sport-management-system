@@ -115,10 +115,13 @@ class TabInfo<T>(
     }
 
     fun overrideClassValues(): Report {
-        require(state.value == States.OK)
+        innerRequire(state.value == States.OK, "Fix the mistakes in CSV first")
         val table = plainCSV.value.split("\n").map { it.split(',') }
         try { csvLines.value = table.map { classConstructor(it) } }
-        catch (e : Exception) { return Report(States.WRONG, "Wrong format; can't process") }
+        catch (e : Exception) {
+            invokeDialog("Wrong format, can't process")
+            return Report(States.WRONG, "Wrong format, can't process")
+        }
 
         return Report(States.OK)
     }
@@ -140,29 +143,31 @@ class TabInfo<T>(
         return result
     }
 
+    private fun innerRequire(result: Boolean, message: String) {
+        if (!result)
+            invokeDialog(message)
+    }
+
     fun sortByField(index: Int) {
-        require(state.value == States.OK)
         val table = getTextLines()
         if (table.isNotEmpty())
-            require(index >= 0 && index < table[0].size)
+            innerRequire(index >= 0 && index < table[0].size, "BUG: Index of a field out of range")
         val columnType = getColumnType(table, index)
         plainCSV.value = sortTableBy(table, index, columnType).joinToString("\n") { it.joinToString(",") }
     }
 
     fun sortDescByField(index: Int) {
-        require(state.value == States.OK)
         val table = getTextLines()
         if (table.isNotEmpty())
-            require(index >= 0 && index < table[0].size)
+            innerRequire(index >= 0 && index < table[0].size, "BUG: Index of a field out of range")
         val columnType = getColumnType(table, index)
         plainCSV.value = sortTableByDescending(table, index, columnType).joinToString("\n") { it.joinToString(",") }
     }
 
     fun filterByField(index: Int) {
-        require(state.value == States.OK)
         val table = getTextLines()
         if (table.isNotEmpty())
-            require(index >= 0 && index < table[0].size)
+            innerRequire(index >= 0 && index < table[0].size, "BUG: Index of a field out of range")
         plainCSV.value = filterTableBy(table, index, whichFilter.value).joinToString("\n") { it.joinToString(",") }
     }
 
@@ -172,6 +177,11 @@ class TabInfo<T>(
 
     fun invokeDialog(report: Report) {
         dialogMessage.value = report.message
+        openDialog.value = true
+    }
+
+    fun invokeDialog(message: String) {
+        dialogMessage.value = message
         openDialog.value = true
     }
 }
@@ -423,19 +433,13 @@ fun transformationToStartSportsman(a: List<EnrollSportsman>): List<StartSportsma
 }
 
 fun checkEquals(a: List<StartSportsman>, b: List<EnrollSportsman>): Report {
-    val allA = mutableSetOf<String>()
-    val allB = mutableSetOf<String>()
-    a.forEach {
-        allA.add(it.mainInformation())
-    }
-    b.forEach {
-        allB.add(it.mainInformation())
-    }
+    val allA = a.map { it.mainInformation() }.toSet()
+    val allB = b.map { it.mainInformation() }.toSet()
     if (allA.size != a.size || allB.size != b.size) {
-        return Report(States.WRONG, "There is an athlete announced several times")
+        return Report(States.WRONG, "A sportsman is announced several times")
     }
     else if (allA != allB) {
-        return Report(States.WRONG, "Athlete lists do not match")
+        return Report(States.WRONG, "Sportsmen lists do not match")
     }
     else {
         return Report(States.OK)
