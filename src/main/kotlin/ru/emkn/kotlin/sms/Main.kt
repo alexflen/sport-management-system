@@ -442,7 +442,7 @@ fun loadCSVToFile(s: String, exportFileName: String): Report {
         for ((name, key) in allString) {
             writeRow(name)
             for (elem in key) {
-                val position = elem.first {it == ','}
+                val position = elem.firstOrNull {it == ','}
                 if (position == null) {
                     answer = Report(States.WRONG, "$elem not have ,")
                 } else {
