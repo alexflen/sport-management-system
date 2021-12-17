@@ -22,6 +22,10 @@ open class Sportsman(surname: String, name: String, birthYear: Int, collective: 
         this.category = category
     }
 
+    fun mainInformation(): String {
+        return "$surname,$name,$birthYear,$collective"
+    }
+
     override fun toString(): String {
         return "$surname,$name,$birthYear,${category?: ""}"
     }

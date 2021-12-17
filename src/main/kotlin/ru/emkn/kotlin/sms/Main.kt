@@ -307,6 +307,26 @@ fun transformationToStartSportsman(a: List<EnrollSportsman>): List<StartSportsma
     return AllStartGroups(a).groups.flatMap {it.participants}
 }
 
+fun checkEquals(a: List<StartSportsman>, b: List<EnrollSportsman>): Report {
+    val allA = mutableSetOf<String>()
+    val allB = mutableSetOf<String>()
+    a.forEach {
+        allA.add(it.mainInformation())
+    }
+    b.forEach {
+        allB.add(it.mainInformation())
+    }
+    if (allA.size != a.size || allB.size != b.size) {
+        return Report(States.WRONG, "There is an athlete announced several times")
+    }
+    else if (allA != allB) {
+        return Report(States.WRONG, "Athlete lists do not match")
+    }
+    else {
+        return Report(States.OK)
+    }
+}
+
 fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "Sport Management System",
         state = rememberWindowState(width = 800.dp, height = 720.dp)
