@@ -98,12 +98,13 @@ fun myApplication(width: Dp, height: Dp) {
                             modifier = Modifier.width(400.dp)
                         )
                         Button(modifier = Modifier.align(Alignment.CenterVertically), onClick = {
-                            currentTab.updateWhenCSV(
-                                loadFromCSVFile(
-                                    currentTab.importFileName.value
-                                )
-                            )
-                            currentTab.overrideClassValues()
+                            try {
+                                currentTab.updateWhenCSV(loadFromCSVFile(currentTab.importFileName.value))
+                                currentTab.overrideClassValues()
+                            }
+                            catch(e: Exception) {
+                                currentTab.invokeDialog(Report(States.WRONG, "Failed to read the file"))
+                            }
                         }) { Icon(Icons.Rounded.Add, "Import") }
                     }
                     OutlinedTextField(value = currentTabType.value.header.joinToString(","),
@@ -131,6 +132,7 @@ fun myApplication(width: Dp, height: Dp) {
                         Button(modifier = Modifier.align(Alignment.CenterVertically), onClick = {
                             loadCSVToFile(currentTab.plainCSV.value,
                                 currentTab.exportFileName.value)
+                            currentTab.invokeDialog(Report(States.OK, "Successfully exported"))
                         }) { Icon(Icons.Rounded.ExitToApp, "Import") }
                     }
 
@@ -149,8 +151,7 @@ fun myApplication(width: Dp, height: Dp) {
                                         transformationToStartSportsman(
                                             tabInfos[TabTypes.TEAMS]!!.csvLines.value
                                             as List<EnrollSportsman>).joinToString("\n") { it.toString() })
-                                    currentTab.dialogReport.value = Report(States.OK, "Successfully generated GROUPS")
-                                    tabInfos[TabTypes.TEAMS]!!.invokeDialog(currentTab.dialogReport.value)
+                                    tabInfos[TabTypes.TEAMS]!!.invokeDialog(Report(States.OK, "Successfully generated GROUPS"))
                                 }
                                 currentTabType.value == TabTypes.GROUPS ||
                                     currentTabType.value == TabTypes.MARKS ||
@@ -160,16 +161,14 @@ fun myApplication(width: Dp, height: Dp) {
                                         tabInfos[TabTypes.DIST]!!.csvLines.value as List<Station>,
                                         tabInfos[TabTypes.MARKS]!!.csvLines.value as List<StationPerformance>)
                                     if (reportCor.state != States.OK) {
-                                        currentTab.dialogReport.value = report
-                                        currentTab.invokeDialog(report)
+                                        currentTab.invokeDialog(reportCor)
                                     } else {
                                         tabInfos[TabTypes.RESULTS]!!.updateWhenCSV(
                                             generateResults(tabInfos[TabTypes.GROUPS]!!.csvLines.value as List<StartSportsman>,
                                             tabInfos[TabTypes.MARKS]!!.csvLines.value
                                             as List<StationPerformance>).joinToString("\n") { it.toString() }
                                         )
-                                        currentTab.dialogReport.value = Report(States.OK, "Successfully updated RESULTS")
-                                        currentTab.invokeDialog(currentTab.dialogReport.value)
+                                        currentTab.invokeDialog(Report(States.OK, "Successfully updated RESULTS"))
                                     }
                                 }
                             }
