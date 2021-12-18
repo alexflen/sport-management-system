@@ -46,6 +46,7 @@ fun myApplication(width: Dp, height: Dp) {
         }
         
         val currentTab = tabInfos[currentTabType.value]!!
+        // Message and Error window
         if (currentTab.openDialog.value) {
             AlertDialog(
                 onDismissRequest = {
@@ -73,6 +74,7 @@ fun myApplication(width: Dp, height: Dp) {
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            // Tab list header
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()) {
                 TabTypes.values().forEach { iterated ->
@@ -83,10 +85,12 @@ fun myApplication(width: Dp, height: Dp) {
                 }
             }
 
+            // Tab title
             Text(currentTabType.value.title, color = Color.Blue, fontSize = 25.sp)
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.SpaceAround,
                 modifier = Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.Top) {
+                    //Import from file
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.width(textWidth)
@@ -107,6 +111,8 @@ fun myApplication(width: Dp, height: Dp) {
                             }
                         }) { Icon(Icons.Rounded.Add, "Import") }
                     }
+
+                    //CSV data
                     OutlinedTextField(value = currentTabType.value.header.joinToString(","),
                         onValueChange = {  },
                         modifier = Modifier
@@ -119,6 +125,7 @@ fun myApplication(width: Dp, height: Dp) {
                             .width(textWidth),
                         label = { Text("${currentTabType.value.title} csv info") })
 
+                    // Export to file
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.width(textWidth)
@@ -136,11 +143,14 @@ fun myApplication(width: Dp, height: Dp) {
                         }) { Icon(Icons.Rounded.ExitToApp, "Import") }
                     }
 
+                    // Warning text
                     Text(currentTab.warning.value, color = Color.Red, fontSize = 18.sp,
                         modifier = Modifier.width(textWidth).padding(5.dp))
                 }
 
+                // Buttons
                 Column(verticalArrangement = Arrangement.Center) {
+                    // Check and generate
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         val report = currentTab.overrideClassValues()
                         if (report.state == States.OK) {
@@ -175,6 +185,7 @@ fun myApplication(width: Dp, height: Dp) {
                         }
                     }) { Text("Check & Generate") }
 
+                    // Sort
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         currentTab.expandSortChoice.value = true
                     }) { Icon(Icons.Rounded.KeyboardArrowDown, "Sort") }
@@ -195,6 +206,7 @@ fun myApplication(width: Dp, height: Dp) {
                         }
                     }
 
+                    // SortDescending
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         currentTab.expandSortDescChoice.value = true
                     }) { Icon(Icons.Rounded.KeyboardArrowUp, "SortDesc") }
@@ -214,6 +226,8 @@ fun myApplication(width: Dp, height: Dp) {
                             }
                         }
                     }
+
+                    // Filter
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         currentTab.expandFilterChoice.value = true
                     }) { Icon(Icons.Rounded.Search, "FilterBy") }
@@ -233,6 +247,8 @@ fun myApplication(width: Dp, height: Dp) {
                             }
                         }
                     }
+
+                    // Text for filter
                     OutlinedTextField(
                         value = currentTab.whichFilter.value,
                         onValueChange = { currentTab.whichFilter.value = it },
@@ -241,6 +257,7 @@ fun myApplication(width: Dp, height: Dp) {
                         modifier = Modifier.width(butWidth)
                     )
 
+                    // Clear filters and sort (if not checked)
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         currentTab.turnBackToWorking()
                     }) { Icon(Icons.Rounded.Clear, "ReturnToWorking") }
