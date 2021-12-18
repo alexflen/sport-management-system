@@ -350,11 +350,12 @@ fun myApplication(width: Dp, height: Dp) {
                             when (currentTab.value) {
                                 TabTypes.TEAMS ->
                                 {
-                                    TODO()
                                     tabInfos[TabTypes.GROUPS]!!.updateWhenCSV(
                                         transformationToStartSportsman(
                                             tabInfos[TabTypes.TEAMS]!!.csvLines.value
-                                                    as List<EnrollSportsman>).joinToString("\n") { it.toString() })
+                                            as List<EnrollSportsman>).joinToString("\n") { it.toString() })
+                                    tabInfos[TabTypes.TEAMS]!!.invokeDialog(Report(States.OK,
+                                        "Successfully generated GROUPS"))
                                 }
                             }
                         }

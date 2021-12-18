@@ -34,9 +34,9 @@ open class Sportsman(surname: String, name: String, birthYear: Int, collective: 
  * Can be Start with added info such as number and start time and can be Enroll with basic info
  */
 open class EnrollSportsman(surname: String, name: String, birthYear: Int,
-                           collective: String, category: String?, desiredGroup: String?):
+                           collective: String, category: String?, desiredGroup: String = ""):
     Sportsman(surname, name, birthYear, collective, category) {
-    val desiredGroup: String?
+    val desiredGroup: String
     init {
         this.desiredGroup = desiredGroup
     }
@@ -45,7 +45,7 @@ open class EnrollSportsman(surname: String, name: String, birthYear: Int,
     constructor(split: List<String>): this(split[1], split[2], split[3].toInt(), split[0], split[4], split[5])
 
     override fun toString(): String {
-        return "$collective,${super.toString()},${desiredGroup ?: ""}"
+        return "$collective,${super.toString()},${desiredGroup}"
     }
 }
 
@@ -54,7 +54,6 @@ open class StartSportsman(surname: String, name: String, birthYear: Int, collect
     Sportsman(surname, name, birthYear, collective, category) {
     val number: Int
     val group: String
-    lateinit var distanceName: String
     lateinit var start: Time
     init {
         this.number = number
@@ -348,7 +347,7 @@ class AllStartGroups(enrolled: List<EnrollSportsman>) {
             val result = mutableListOf<StartSportsman>()
             for (i in shuffled.indices) {
                 result.add(StartSportsman(shuffled[i],
-                    shuffled[i].desiredGroup?: "unspecified", i + 1))
+                    shuffled[i].desiredGroup.ifEmpty { "Unspecified" }, i + 1))
             }
             return result
         }
@@ -365,6 +364,7 @@ class AllStartGroups(enrolled: List<EnrollSportsman>) {
                     formedGroups[i].participants[j].start = currentTime
                     currentTime++
                 }
+                result.add(formedGroups[i])
             }
             return result
         }
