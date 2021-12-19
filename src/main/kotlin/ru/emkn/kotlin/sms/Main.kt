@@ -1,8 +1,5 @@
 package ru.emkn.kotlin.sms
 
-import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
-import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
-
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -154,33 +151,30 @@ fun myApplication(width: Dp, height: Dp) {
                     Button(modifier = Modifier.align(Alignment.CenterHorizontally).width(butWidth), onClick = {
                         val report = currentTab.overrideClassValues()
                         if (report.state == States.OK) {
-                            when {
-                                currentTabType.value == TabTypes.TEAMS ->
-                                {
+                            when (currentTabType.value) {
+                                TabTypes.TEAMS -> {
                                     tabInfos[TabTypes.GROUPS]!!.updateWhenCSV(
                                         transformationToStartSportsman(
-                                            tabInfos[TabTypes.TEAMS]!!.csvLines.value
-                                            as List<EnrollSportsman>).joinToString("\n") { it.toString() })
+                                            tabInfos[TabTypes.TEAMS]!!.classLines.value
+                                                    as List<EnrollSportsman>).joinToString("\n") { it.toString() })
                                     tabInfos[TabTypes.TEAMS]!!.invokeDialog(Report(States.OK, "Successfully generated GROUPS"))
                                 }
-                                currentTabType.value == TabTypes.GROUPS ||
-                                    currentTabType.value == TabTypes.MARKS ||
-                                        currentTabType.value == TabTypes.DIST ->
-                                {
-                                    val reportCor = checkCorrelation(tabInfos[TabTypes.GROUPS]!!.csvLines.value as List<StartSportsman>,
-                                        tabInfos[TabTypes.DIST]!!.csvLines.value as List<Station>,
-                                        tabInfos[TabTypes.MARKS]!!.csvLines.value as List<StationPerformance>)
+                                TabTypes.GROUPS, TabTypes.MARKS, TabTypes.DIST -> {
+                                    val reportCor = checkCorrelation(tabInfos[TabTypes.GROUPS]!!.classLines.value as List<StartSportsman>,
+                                        tabInfos[TabTypes.DIST]!!.classLines.value as List<Station>,
+                                        tabInfos[TabTypes.MARKS]!!.classLines.value as List<StationPerformance>)
                                     if (reportCor.state != States.OK) {
                                         currentTab.invokeDialog(reportCor)
                                     } else {
                                         tabInfos[TabTypes.RESULTS]!!.updateWhenCSV(
-                                            generateResults(tabInfos[TabTypes.GROUPS]!!.csvLines.value as List<StartSportsman>,
-                                            tabInfos[TabTypes.MARKS]!!.csvLines.value
-                                            as List<StationPerformance>).joinToString("\n") { it.toString() }
+                                            generateResults(tabInfos[TabTypes.GROUPS]!!.classLines.value as List<StartSportsman>,
+                                                tabInfos[TabTypes.MARKS]!!.classLines.value
+                                                        as List<StationPerformance>).joinToString("\n") { it.toString() }
                                         )
                                         currentTab.invokeDialog(Report(States.OK, "Successfully updated RESULTS"))
                                     }
                                 }
+                                else -> {}
                             }
                         }
                     }) { Text("Check & Generate") }

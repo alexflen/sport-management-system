@@ -31,8 +31,8 @@ class TabInfo<T>(
     expandSortDescChoice: MutableState<Boolean>,
     expandFilterChoice: MutableState<Boolean>,
     state: MutableState<States>,
-    initLines: MutableState<List<T>>,
-    csvLines: MutableState<List<T>>,
+    initClassLines: MutableState<List<T>>,
+    classLines: MutableState<List<T>>,
     whichFilter: MutableState<String>,
     openDialog: MutableState<Boolean>,
     dialogReport: MutableState<Report>,
@@ -46,8 +46,8 @@ class TabInfo<T>(
     var expandSortDescChoice: MutableState<Boolean>
     var expandFilterChoice: MutableState<Boolean>
     var state: MutableState<States>
-    var initLines: MutableState<List<T>>
-    var csvLines: MutableState<List<T>>
+    var initClassLines: MutableState<List<T>>
+    var classLines: MutableState<List<T>>
     val whichFilter: MutableState<String>
     val classConstructor: (List<String>) -> T
     var openDialog: MutableState<Boolean>
@@ -55,7 +55,7 @@ class TabInfo<T>(
     init {
         this.initCSV = initCSV
         this.plainCSV = plainCSV
-        this.csvLines = csvLines
+        this.classLines = classLines
         this.expandSortChoice = expandSortChoice
         this.expandSortDescChoice = expandSortDescChoice
         this.expandFilterChoice = expandFilterChoice
@@ -63,7 +63,7 @@ class TabInfo<T>(
         this.importFileName = importFileName
         this.state = state
         this.warning = warning
-        this.initLines = initLines
+        this.initClassLines = initClassLines
         this.classConstructor = classConstructor
         this.whichFilter = whichFilter
         this.openDialog = openDialog
@@ -115,7 +115,7 @@ class TabInfo<T>(
             return report
         }
 
-        csvLines.value = table.map { classConstructor(it) } // No exceptions guaranteed
+        classLines.value = table.map { classConstructor(it) } // No exceptions guaranteed
         return Report(States.OK)
     }
 
@@ -165,7 +165,7 @@ class TabInfo<T>(
     }
 
     fun turnBackToWorking() {
-        plainCSV.value = csvLines.value.joinToString("\n") { it.toString() }
+        plainCSV.value = classLines.value.joinToString("\n") { it.toString() }
     }
 
     fun invokeDialog(report: Report) {
